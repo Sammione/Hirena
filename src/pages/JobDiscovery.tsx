@@ -4,6 +4,7 @@ import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sp
 import { mockJobs } from '../data/mockData';
 import { cn } from '../utils/cn';
 import { matchSkillsToJob } from '../lib/openai';
+import confetti from 'canvas-confetti';
 
 export default function JobDiscovery() {
     const navigate = useNavigate();
@@ -20,6 +21,34 @@ export default function JobDiscovery() {
 
             const result = await matchSkillsToJob(cvText, jobDescription);
             setMatchResults(prev => ({ ...prev, [job.id]: result }));
+
+            // Trigger confetti if high match
+            if (result.match_percentage > 80) {
+                const end = Date.now() + 1000;
+                const colors = ['#10B981', '#ffffff'];
+
+                (function frame() {
+                    confetti({
+                        particleCount: 2,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 },
+                        colors: colors
+                    });
+                    confetti({
+                        particleCount: 2,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 },
+                        colors: colors
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                }());
+            }
+
         } catch (error) {
             console.error('Matching failed:', error);
         } finally {

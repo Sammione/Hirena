@@ -3,13 +3,17 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Navbar } from '../components/layout/Navbar';
 import CareerAI from '../components/CareerAI';
+import { WhatsAppModal } from '../components/WhatsAppModal';
 import { cn } from '../utils/cn';
 
 export function MainLayout() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
 
     return (
         <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
+            <WhatsAppModal isOpen={isWhatsAppOpen} onClose={() => setIsWhatsAppOpen(false)} />
+
             {/* Mobile Sidebar Overlay */}
             {isMobileMenuOpen && (
                 <div
@@ -23,7 +27,13 @@ export function MainLayout() {
                 "fixed inset-y-0 left-0 z-[70] w-64 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:inset-0",
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
+                <Sidebar
+                    onClose={() => setIsMobileMenuOpen(false)}
+                    onOpenWhatsApp={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsWhatsAppOpen(true);
+                    }}
+                />
             </div>
 
             {/* Main Content */}

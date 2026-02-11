@@ -73,13 +73,45 @@ export default function CareerPathway() {
                         </div>
                     )}
 
-                    <div className="space-y-12 relative before:absolute before:left-6 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    <div className="relative space-y-12">
+                        {/* Dynamic SVG Line */}
+                        <div className="absolute left-6 top-2 bottom-6 w-1 hidden md:block">
+                            <svg className="h-full w-full overflow-visible">
+                                {/* Background Line */}
+                                <line
+                                    x1="50%" y1="0" x2="50%" y2="100%"
+                                    stroke="#E2E8F0"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                />
+                                {/* Animated Progress Line */}
+                                <line
+                                    x1="50%" y1="0" x2="50%" y2={`${(roadmapToDisplay.filter(s => s.status === 'Completed').length / roadmapToDisplay.length) * 100}%`}
+                                    stroke="#10B981"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    className="transition-all duration-1000 ease-out"
+                                />
+                                {/* Pulse Effect at tip of progress */}
+                                <circle
+                                    cx="50%"
+                                    cy={`${(roadmapToDisplay.filter(s => s.status === 'Completed').length / roadmapToDisplay.length) * 100}%`}
+                                    r="4"
+                                    fill="#10B981"
+                                    className="animate-ping transition-all duration-1000"
+                                />
+                            </svg>
+                        </div>
+
                         {roadmapToDisplay.map((stage, index) => (
-                            <div key={stage.id} className="relative pl-16 group">
+                            <div key={stage.id} className="relative pl-0 md:pl-16 group">
+                                {/* Mobile Line Fallback */}
+                                <div className="md:hidden absolute left-4 top-2 bottom-[-48px] w-0.5 bg-slate-200"></div>
+
                                 <div className={cn(
-                                    "absolute left-0 top-1 w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10 transition-all",
-                                    stage.status === 'Completed' ? "bg-brand-emerald-500" :
-                                        stage.status === 'In Progress' ? "bg-brand-blue-900 animate-pulse" : "bg-slate-200"
+                                    "absolute left-0 top-1 w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10 transition-all duration-500 hidden md:flex",
+                                    stage.status === 'Completed' ? "bg-brand-emerald-500 scale-110" :
+                                        stage.status === 'In Progress' ? "bg-brand-blue-900 animate-pulse scale-110" : "bg-slate-200"
                                 )}>
                                     {stage.status === 'Completed' && <CheckCircle2 className="w-6 h-6 text-white" />}
                                     {stage.status === 'In Progress' && <Circle className="w-6 h-6 text-white" />}
@@ -87,34 +119,35 @@ export default function CareerPathway() {
                                 </div>
 
                                 <div className={cn(
-                                    "card p-6 transition-all",
-                                    stage.status === 'In Progress' ? "border-brand-emerald-500 shadow-lg shadow-brand-emerald-500/5" : "hover:border-slate-300"
+                                    "card p-6 transition-all duration-300 hover:-translate-y-1",
+                                    stage.status === 'In Progress' ? "border-brand-emerald-500 shadow-xl shadow-brand-emerald-500/10 ring-1 ring-brand-emerald-500/20" : "hover:border-brand-emerald-200 hover:shadow-lg hover:shadow-brand-emerald-500/5",
+                                    stage.status === 'Locked' && "opacity-70 grayscale-[0.5]"
                                 )}>
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div>
-                                            <div className="flex items-center gap-2 mb-1">
+                                            <div className="flex items-center gap-2 mb-2">
                                                 <span className={cn(
-                                                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded",
-                                                    stage.status === 'Completed' ? "bg-brand-emerald-50 text-brand-emerald-600" :
-                                                        stage.status === 'In Progress' ? "bg-brand-blue-50 text-brand-blue-600" : "bg-slate-100 text-slate-500"
+                                                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                                                    stage.status === 'Completed' ? "bg-brand-emerald-100 text-brand-emerald-700" :
+                                                        stage.status === 'In Progress' ? "bg-brand-blue-50 text-brand-blue-700" : "bg-slate-100 text-slate-500"
                                                 )}>
                                                     Module {index + 1} • {stage.status}
                                                 </span>
                                             </div>
-                                            <h3 className="text-xl font-bold text-slate-900">{stage.title}</h3>
+                                            <h3 className="text-xl font-bold text-slate-900 group-hover:text-brand-blue-900 transition-colors">{stage.title}</h3>
                                             {'description' in stage && (
                                                 <p className="mt-2 text-sm text-slate-600 leading-relaxed font-medium">{stage.description as string}</p>
                                             )}
-                                            <div className="flex items-center gap-4 mt-3 text-sm text-slate-500 font-medium">
-                                                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {stage.duration}</span>
-                                                <span className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> {stage.skills.length} skills</span>
+                                            <div className="flex items-center gap-4 mt-3 text-xs font-bold text-slate-400 uppercase tracking-wide">
+                                                <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {stage.duration}</span>
+                                                <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" /> {stage.skills.length} skills</span>
                                             </div>
                                         </div>
                                         {stage.status !== 'Locked' && (
                                             <button className={cn(
-                                                "px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all",
-                                                stage.status === 'Completed' ? "text-brand-emerald-600 bg-brand-emerald-50 hover:bg-brand-emerald-100" :
-                                                    "text-white bg-brand-blue-900 hover:bg-brand-blue-800"
+                                                "px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95",
+                                                stage.status === 'Completed' ? "text-brand-emerald-700 bg-white border border-brand-emerald-200 hover:bg-brand-emerald-50" :
+                                                    "text-white bg-brand-blue-900 hover:bg-brand-blue-800 shadow-brand-blue-900/20"
                                             )}>
                                                 {stage.status === 'Completed' ? 'Review Content' : 'Continue Learning'} <ArrowRight className="w-4 h-4" />
                                             </button>
@@ -125,8 +158,8 @@ export default function CareerPathway() {
                                         {stage.skills.map(skill => (
                                             <div key={skill} className="flex items-center gap-2">
                                                 <div className={cn(
-                                                    "w-2 h-2 rounded-full",
-                                                    stage.status === 'Completed' ? "bg-brand-emerald-500" : "bg-slate-300"
+                                                    "w-2 h-2 rounded-full transition-colors duration-500",
+                                                    stage.status === 'Completed' ? "bg-brand-emerald-500" : "bg-slate-300 group-hover:bg-brand-emerald-300"
                                                 )}></div>
                                                 <span className="text-xs font-bold text-slate-600">{skill}</span>
                                             </div>

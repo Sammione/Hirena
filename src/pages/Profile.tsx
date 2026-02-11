@@ -1,5 +1,6 @@
 import React from 'react';
 import { User, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, Settings, Shield } from 'lucide-react';
+import { VoicePitch } from '../components/VoicePitch';
 
 export default function Profile() {
     return (
@@ -26,6 +27,12 @@ export default function Profile() {
                             </button>
                         </div>
                     </div>
+
+                    {/* Voice Pitch Section */}
+                    <div className="mb-8">
+                        <VoicePitch />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8 pt-6 border-t border-slate-100">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
