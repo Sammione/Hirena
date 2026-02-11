@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles } from 'lucide-react';
 import { mockJobs } from '../data/mockData';
 import { cn } from '../utils/cn';
 import { matchSkillsToJob } from '../lib/openai';
 
 export default function JobDiscovery() {
+    const navigate = useNavigate();
     const [filter, setFilter] = useState('All');
     const [matchingJobId, setMatchingJobId] = useState<string | null>(null);
     const [matchResults, setMatchResults] = useState<Record<string, any>>({});
@@ -147,8 +149,14 @@ export default function JobDiscovery() {
                                                 {matchingJobId === job.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-brand-emerald-500" />}
                                                 Match with AI
                                             </button>
+                                            <button
+                                                onClick={() => navigate('/cv')}
+                                                className="flex items-center gap-2 bg-white border border-brand-emerald-500 text-brand-emerald-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-emerald-50 transition-all"
+                                            >
+                                                Tailor CV
+                                            </button>
                                             <button className="flex items-center gap-2 bg-brand-blue-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-blue-800 transition-all shadow-lg shadow-brand-blue-900/10">
-                                                Quick Apply <ChevronRight className="w-4 h-4" />
+                                                Apply Now <ChevronRight className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
