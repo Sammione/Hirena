@@ -184,6 +184,7 @@ export default function CVManagement() {
                     )}
 
                     {activeTab === 'Expert Tools' && (
+                        <>
                             <div className="card p-8 border-slate-200">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-3 bg-brand-blue-50 rounded-2xl">
@@ -195,13 +196,13 @@ export default function CVManagement() {
                                     </div>
                                 </div>
                                 <div className="space-y-4">
-                                    <textarea 
+                                    <textarea
                                         className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-500/20 focus:border-brand-blue-500 outline-none min-h-[100px] text-slate-700 font-medium transition-all"
                                         placeholder="e.g. I was responsible for fixing bugs and managing the server..."
                                         value={bulletInput}
                                         onChange={(e) => setBulletInput(e.target.value)}
                                     />
-                                    <button 
+                                    <button
                                         onClick={handleOptimizeBullet}
                                         disabled={isOptimizing || !bulletInput}
                                         className="bg-brand-blue-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-brand-blue-800 transition-all disabled:opacity-50 flex items-center gap-2"
@@ -209,7 +210,7 @@ export default function CVManagement() {
                                         {isOptimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                                         Optimize Point
                                     </button>
-                                    
+
                                     {optimizedBullet && (
                                         <div className="mt-6 p-6 bg-emerald-50 border border-emerald-100 rounded-2xl relative group animate-in slide-in-from-top-2">
                                             <div className="flex items-center gap-2 mb-3 text-emerald-600">
@@ -217,7 +218,7 @@ export default function CVManagement() {
                                                 <span className="text-[10px] font-black uppercase tracking-widest">AI Optimized Version</span>
                                             </div>
                                             <p className="text-slate-800 font-bold leading-relaxed pr-8">{optimizedBullet}</p>
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     navigator.clipboard.writeText(optimizedBullet);
                                                 }}
@@ -242,12 +243,12 @@ export default function CVManagement() {
                                     </div>
                                 </div>
                                 <div className="space-y-4">
-                                    <textarea 
+                                    <textarea
                                         className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-emerald-500/20 focus:border-brand-emerald-500 outline-none min-h-[120px] text-slate-700 font-medium transition-all"
                                         placeholder="Paste the job requirements or role description here..."
                                         onChange={(e) => setBulletInput(e.target.value)} // Re-using state for demo or create new if needed
                                     />
-                                    <button 
+                                    <button
                                         onClick={async () => {
                                             setIsGeneratingCL(true);
                                             try {
@@ -265,12 +266,12 @@ export default function CVManagement() {
                                         {isGeneratingCL ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                                         Generate Tailored Letter
                                     </button>
-                                    
+
                                     {coverLetter && (
                                         <div className="mt-6 p-8 bg-slate-50 border border-slate-200 rounded-2xl relative animate-in slide-in-from-bottom-2">
                                             <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-4">
                                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Generated Letter</span>
-                                                <button 
+                                                <button
                                                     onClick={() => navigator.clipboard.writeText(coverLetter)}
                                                     className="text-xs font-bold text-brand-emerald-600 hover:text-brand-emerald-700 flex items-center gap-1"
                                                 >
@@ -284,107 +285,107 @@ export default function CVManagement() {
                                     )}
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
-            </div>
+                </div>
 
-            <div className="space-y-6">
-                <div ref={analysisRef} className="card p-6 border-slate-200 shadow-xl shadow-slate-900/5 bg-white relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-brand-emerald-50 rounded-xl">
-                                <Zap className="w-5 h-5 text-brand-emerald-500" />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 tracking-tight">AI Feedback</h3>
-                        </div>
-                        {analysisResult && (
-                            <button onClick={downloadFullReport} className="p-2 text-slate-400 hover:text-brand-emerald-500 transition-all" title="Download Audit Report">
-                                <Download className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="space-y-6">
-                        {analysisResult ? (
-                            <>
-                                <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <div className="p-4 bg-slate-50 rounded-2xl text-center border border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ATS Score</p>
-                                        <p className="text-3xl font-black text-brand-emerald-600">{analysisResult.score}%</p>
-                                    </div>
-                                    <div className="p-4 bg-brand-blue-900 rounded-2xl text-center">
-                                        <p className="text-[10px] font-black text-brand-blue-200 uppercase tracking-widest mb-2">Readiness</p>
-                                        <p className="text-3xl font-black text-white">{analysisResult.readinessScore}%</p>
-                                    </div>
+                <div className="space-y-6">
+                    <div ref={analysisRef} className="card p-6 border-slate-200 shadow-xl shadow-slate-900/5 bg-white relative overflow-hidden">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-brand-emerald-50 rounded-xl">
+                                    <Zap className="w-5 h-5 text-brand-emerald-500" />
                                 </div>
+                                <h3 className="text-lg font-bold text-slate-900 tracking-tight">AI Feedback</h3>
+                            </div>
+                            {analysisResult && (
+                                <button onClick={downloadFullReport} className="p-2 text-slate-400 hover:text-brand-emerald-500 transition-all" title="Download Audit Report">
+                                    <Download className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
 
-                                <div className="space-y-4">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Analysis Breakdown</h4>
-                                    <div className="space-y-3">
-                                        {Object.entries(analysisResult.sections || {}).map(([key, data]: [string, any]) => (
-                                            <div key={key} className="p-3 bg-slate-50/50 rounded-xl border border-slate-100">
-                                                <div className="flex justify-between items-center mb-1.5">
-                                                    <span className="text-xs font-bold text-slate-700 capitalize">{key}</span>
-                                                    <span className="text-[10px] font-black text-brand-emerald-600">{data.score}%</span>
+                        <div className="space-y-6">
+                            {analysisResult ? (
+                                <>
+                                    <div className="grid grid-cols-2 gap-3 mb-4">
+                                        <div className="p-4 bg-slate-50 rounded-2xl text-center border border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ATS Score</p>
+                                            <p className="text-3xl font-black text-brand-emerald-600">{analysisResult.score}%</p>
+                                        </div>
+                                        <div className="p-4 bg-brand-blue-900 rounded-2xl text-center">
+                                            <p className="text-[10px] font-black text-brand-blue-200 uppercase tracking-widest mb-2">Readiness</p>
+                                            <p className="text-3xl font-black text-white">{analysisResult.readinessScore}%</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Analysis Breakdown</h4>
+                                        <div className="space-y-3">
+                                            {Object.entries(analysisResult.sections || {}).map(([key, data]: [string, any]) => (
+                                                <div key={key} className="p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                                                    <div className="flex justify-between items-center mb-1.5">
+                                                        <span className="text-xs font-bold text-slate-700 capitalize">{key}</span>
+                                                        <span className="text-[10px] font-black text-brand-emerald-600">{data.score}%</span>
+                                                    </div>
+                                                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mb-2">
+                                                        <div className="h-full bg-brand-emerald-500" style={{ width: `${data.score}%` }}></div>
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic">"{data.feedback}"</p>
                                                 </div>
-                                                <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mb-2">
-                                                    <div className="h-full bg-brand-emerald-500" style={{ width: `${data.score}%` }}></div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 pt-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top Improvements</h4>
+                                        {analysisResult.improvements.slice(0, 3).map((imp, i) => (
+                                            <div key={i} className="flex gap-3 items-start">
+                                                <div className="p-1 bg-emerald-50 rounded-md mt-0.5">
+                                                    <Sparkles className="w-3 h-3 text-emerald-600" />
                                                 </div>
-                                                <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic">"{data.feedback}"</p>
+                                                <p className="text-xs text-slate-600 font-bold leading-relaxed">{imp}</p>
                                             </div>
                                         ))}
                                     </div>
+                                </>
+                            ) : (
+                                <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
+                                        <FileText className="w-8 h-8 text-slate-200" />
+                                    </div>
+                                    <h4 className="text-slate-900 font-bold mb-2">No Analysis Active</h4>
+                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                        Upload your CV to see a detailed audit of your impact, presentation, and industry keywords.
+                                    </p>
                                 </div>
-
-                                <div className="space-y-4 pt-4">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top Improvements</h4>
-                                    {analysisResult.improvements.slice(0, 3).map((imp, i) => (
-                                        <div key={i} className="flex gap-3 items-start">
-                                            <div className="p-1 bg-emerald-50 rounded-md mt-0.5">
-                                                <Sparkles className="w-3 h-3 text-emerald-600" />
-                                            </div>
-                                            <p className="text-xs text-slate-600 font-bold leading-relaxed">{imp}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </>
-                        ) : (
-                            <div className="py-12 flex flex-col items-center justify-center text-center px-4">
-                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
-                                    <FileText className="w-8 h-8 text-slate-200" />
-                                </div>
-                                <h4 className="text-slate-900 font-bold mb-2">No Analysis Active</h4>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                    Upload your CV to see a detailed audit of your impact, presentation, and industry keywords.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                    {/* Background Decor */}
-                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-brand-emerald-500/5 rounded-full blur-3xl"></div>
-                </div>
-
-                <div className="card p-6 bg-brand-blue-900 text-white relative overflow-hidden group">
-                    <div className="relative z-10">
-                        <h4 className="text-sm font-black uppercase tracking-widest mb-4 text-brand-emerald-400">Skill Gaps</h4>
-                        <div className="flex flex-wrap gap-2 mb-6">
-                            {(analysisResult?.skillGaps || ['Docker', 'AWS', 'Kubernetes']).map((gap, i) => (
-                                <span key={i} className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md text-[10px] font-black text-white rounded-lg border border-white/10 group-hover:border-brand-emerald-400 transition-colors">
-                                    {gap}
-                                </span>
-                            ))}
+                            )}
                         </div>
-                        <p className="text-xs text-brand-blue-200 mb-6 font-medium leading-relaxed">
-                            Our AI detected these high-value skills are missing from your profile compared to global remote roles.
-                        </p>
-                        <button className="w-full py-3 bg-brand-emerald-500 hover:bg-brand-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-emerald-500/20 active:scale-95">
-                            Generate Learning Plan
-                        </button>
+                        {/* Background Decor */}
+                        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-brand-emerald-500/5 rounded-full blur-3xl"></div>
                     </div>
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+
+                    <div className="card p-6 bg-brand-blue-900 text-white relative overflow-hidden group">
+                        <div className="relative z-10">
+                            <h4 className="text-sm font-black uppercase tracking-widest mb-4 text-brand-emerald-400">Skill Gaps</h4>
+                            <div className="flex flex-wrap gap-2 mb-6">
+                                {(analysisResult?.skillGaps || ['Docker', 'AWS', 'Kubernetes']).map((gap, i) => (
+                                    <span key={i} className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md text-[10px] font-black text-white rounded-lg border border-white/10 group-hover:border-brand-emerald-400 transition-colors">
+                                        {gap}
+                                    </span>
+                                ))}
+                            </div>
+                            <p className="text-xs text-brand-blue-200 mb-6 font-medium leading-relaxed">
+                                Our AI detected these high-value skills are missing from your profile compared to global remote roles.
+                            </p>
+                            <button className="w-full py-3 bg-brand-emerald-500 hover:bg-brand-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-emerald-500/20 active:scale-95">
+                                Generate Learning Plan
+                            </button>
+                        </div>
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                    </div>
                 </div>
             </div>
-        </div>
         </div >
     );
 }
