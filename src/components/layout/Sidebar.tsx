@@ -8,7 +8,8 @@ import {
     User,
     Settings,
     LogOut,
-    Briefcase
+    Briefcase,
+    X
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -20,12 +21,22 @@ const navItems = [
     { icon: User, label: 'Profile', path: '/profile' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
     return (
-        <aside className="w-64 h-screen bg-brand-blue-900 text-slate-300 flex flex-col fixed left-0 top-0 z-50">
-            <div className="p-6 flex items-center gap-3">
-                <img src="/logo.svg" alt="Hirena Logo" className="w-10 h-10" />
-                <span className="text-white font-bold text-2xl tracking-tight">HIRENA</span>
+        <aside className="w-64 h-full bg-brand-blue-900 text-slate-300 flex flex-col pt-4">
+            <div className="px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <img src="/logo.svg" alt="Hirena Logo" className="w-10 h-10" />
+                    <span className="text-white font-bold text-2xl tracking-tight">HIRENA</span>
+                </div>
+                {onClose && (
+                    <button
+                        onClick={onClose}
+                        className="lg:hidden p-2 hover:bg-white/10 rounded-lg text-white"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                )}
             </div>
 
             <nav className="flex-1 px-4 py-6 space-y-2">
@@ -33,6 +44,7 @@ export function Sidebar() {
                     <NavLink
                         key={item.path}
                         to={item.path}
+                        onClick={onClose}
                         className={({ isActive }) => cn(
                             "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group",
                             isActive
@@ -49,6 +61,7 @@ export function Sidebar() {
             <div className="p-4 border-t border-brand-blue-800">
                 <NavLink
                     to="/settings"
+                    onClick={onClose}
                     className={({ isActive }) => cn(
                         "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                         isActive ? "bg-brand-blue-800 text-white" : "hover:bg-brand-blue-800 hover:text-white"
