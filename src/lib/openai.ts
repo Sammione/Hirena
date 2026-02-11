@@ -13,11 +13,15 @@ const openai = new OpenAI({
 
 export type CVAnalysis = {
     score: number;
+    readinessScore: number;
+    sections: {
+        impact: { score: number; feedback: string };
+        presentation: { score: number; feedback: string };
+        keywords: { score: number; feedback: string };
+    };
     strengths: string[];
-    weaknesses: string[];
     improvements: string[];
     skillGaps: string[];
-    readinessScore: number;
 };
 
 export type CareerRoadmap = {
@@ -36,7 +40,7 @@ export const analyzeCV = async (cvText: string): Promise<CVAnalysis> => {
         messages: [
             {
                 role: 'system',
-                content: 'You are an expert career coach and recursive recruiter. Analyze the following CV and provide a structured JSON response containing: score (0-100), strengths (list), weaknesses (list), improvements (list), skillGaps (list compared to industry standards), and readinessScore (0-100).'
+                content: 'You are a senior recruiter. Analyze the CV and provide a granular JSON response with: score (0-100), readinessScore (0-100), sections (impact, presentation, keywords each with score and feedback), strengths (list), improvements (list), and skillGaps (list).'
             },
             {
                 role: 'user',
@@ -47,6 +51,40 @@ export const analyzeCV = async (cvText: string): Promise<CVAnalysis> => {
     });
 
     return JSON.parse(response.choices[0].message.content || '{}') as CVAnalysis;
+};
+
+export const rewriteBulletPoint = async (bullet: string, targetRole?: string): Promise<string> => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: 'You are an expert resume writer. Rewrite the bullet point to be high-impact and quantified. Use strong action verbs. Keep it concise.'
+            },
+            {
+                role: 'user',
+                content: `Rewrite: "${bullet}" ${targetRole ? `for a ${targetRole} role` : ''}`
+            }
+        ]
+    });
+    return response.choices[0].message.content || bullet;
+};
+
+export const generateCoverLetter = async (cvText: string, jobInfo: string): Promise<string> => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: 'You are a career coach. Write a professional cover letter based on the CV and job info. Use [Hiring Manager] placeholders.'
+            },
+            {
+                role: 'user',
+                content: `CV: ${cvText}\n\nJob Info: ${jobInfo}`
+            }
+        ]
+    });
+    return response.choices[0].message.content || 'Failed to generate cover letter.';
 };
 
 export const matchSkillsToJob = async (cvText: string, jobDescription: string) => {
