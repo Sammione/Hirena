@@ -161,4 +161,28 @@ export const generateNegotiationStrategy = async (offerDetails: string, cvContex
     return response.choices[0].message.content || 'Failed to generate strategy.';
 };
 
+export const getCompanyInsights = async (companyName: string) => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `You are a corporate intelligence analyst. Provide a deep dive into the specified company.
+                Include:
+                1. Culture & Values: What they care about.
+                2. Recent News/Trends: What's happening with them lately.
+                3. Interview Prep: Top 5 common interview questions and how to answer them specifically for this company.
+                4. Inside Tip: A secret "X-factor" to mention in the interview to impress them.
+                Format as valid Markdown.`
+            },
+            {
+                role: 'user',
+                content: `Provide a deep dive for the company: ${companyName}`
+            }
+        ]
+    });
+
+    return response.choices[0].message.content || 'Failed to fetch company insights.';
+};
+
 export default openai;

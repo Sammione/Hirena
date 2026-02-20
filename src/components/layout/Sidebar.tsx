@@ -11,7 +11,8 @@ import {
     Briefcase,
     X,
     ArrowRight,
-    DollarSign
+    DollarSign,
+    Building2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -21,6 +22,7 @@ const navItems = [
     { icon: Map, label: 'Career Pathway', path: '/pathway' },
     { icon: FileText, label: 'CV Management', path: '/cv' },
     { icon: DollarSign, label: 'Salary Negotiator', path: '/negotiator' },
+    { icon: Building2, label: 'Company Deep-Dive', path: '/company-insights' },
     { icon: User, label: 'Profile', path: '/profile' },
 ];
 

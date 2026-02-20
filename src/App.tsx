@@ -17,6 +17,7 @@ const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const SalaryNegotiator = lazy(() => import('./pages/SalaryNegotiator'));
+const CompanyInsights = lazy(() => import('./pages/CompanyInsights'));
 
 // Loading component
 const PageLoader = () => (
@@ -101,6 +102,7 @@ function App() {
                         <Route path="/cv" element={<CVManagement />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/negotiator" element={<SalaryNegotiator />} />
+                        <Route path="/company-insights" element={<CompanyInsights />} />
                         <Route path="/settings" element={<Profile />} />
                     </Route>
 
