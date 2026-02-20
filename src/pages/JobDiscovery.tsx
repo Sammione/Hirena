@@ -23,8 +23,19 @@ export default function JobDiscovery() {
     useEffect(() => {
         const init = async () => {
             await loadUserCV();
-            const role = await loadUserProfile();
-            handleSearch(role || 'React Developer');
+
+            // Check session cache first
+            const cachedJobs = sessionStorage.getItem('hirena_last_jobs');
+            const cachedQuery = sessionStorage.getItem('hirena_last_query');
+
+            if (cachedJobs && cachedQuery) {
+                setJobs(JSON.parse(cachedJobs));
+                setSearchQuery(cachedQuery);
+                lastSearchRef.current = cachedQuery;
+            } else {
+                const role = await loadUserProfile();
+                handleSearch(role || 'React Developer');
+            }
         };
         init();
     }, []);
@@ -72,6 +83,9 @@ export default function JobDiscovery() {
         try {
             const results = await searchJobs(query);
             setJobs(results);
+            // Save to session cache
+            sessionStorage.setItem('hirena_last_jobs', JSON.stringify(results));
+            sessionStorage.setItem('hirena_last_query', query);
         } catch (error) {
             console.error('Search failed:', error);
         } finally {
