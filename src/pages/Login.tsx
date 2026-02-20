@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Mail, Lock, ArrowRight, Github } from 'lucide-react';
 
@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useState } from 'react';
 
 export default function Login() {
+    const navigate = useNavigate();
     const { register, handleSubmit } = useForm();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -15,15 +16,18 @@ export default function Login() {
         setIsLoading(true);
         setError(null);
         try {
-            const { error: signInError } = await supabase.auth.signInWithPassword({
+            console.log('Attempting login...');
+            const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
                 email: data.email,
                 password: data.password,
             });
 
             if (signInError) throw signInError;
 
-            window.location.href = '/dashboard';
+            console.log('Login successful, navigating...');
+            navigate('/dashboard');
         } catch (err: any) {
+            console.error('Login error:', err);
             setError(err.message || 'Error signing in');
         } finally {
             setIsLoading(false);

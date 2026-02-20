@@ -32,33 +32,50 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const initAuth = async () => {
+        const checkAuthAndProfile = async () => {
+            console.log('ProtectedRoute: Starting check...');
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                // Add a timeout to getSession to prevent infinite hang
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000));
+
+                const { data: { session }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+
+                if (sessionError) throw sessionError;
+
                 if (session?.user) {
+                    console.log('ProtectedRoute: User found', session.user.id);
                     setUser(session.user);
-                    // Check onboarding status
+
                     const { data: profile, error: profileError } = await supabase
                         .from('profiles')
                         .select('onboarded')
                         .eq('id', session.user.id)
-                        .single();
+                        .maybeSingle(); // Better than single()
 
                     if (profileError) {
-                        console.warn('Profile not found or error fetching:', profileError);
+                        console.warn('ProtectedRoute: Profile fetch error', profileError);
                         setIsOnboarded(false);
                     } else {
+                        console.log('ProtectedRoute: Profile found', profile);
                         setIsOnboarded(profile?.onboarded ?? false);
                     }
+                } else {
+                    console.log('ProtectedRoute: No user session');
+                    setUser(null);
+                    setIsOnboarded(null);
                 }
             } catch (err) {
-                console.error('Auth initialization failed:', err);
+                console.error('ProtectedRoute: Error in auth check', err);
+                setUser(null);
+                setIsOnboarded(null);
             } finally {
+                console.log('ProtectedRoute: Check finished');
                 setLoading(false);
             }
         };
 
-        initAuth();
+        checkAuthAndProfile();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
             setUser(session?.user ?? null);
