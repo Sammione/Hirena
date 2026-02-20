@@ -10,7 +10,8 @@ import {
     LogOut,
     Briefcase,
     X,
-    ArrowRight
+    ArrowRight,
+    DollarSign
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -19,6 +20,7 @@ const navItems = [
     { icon: Briefcase, label: 'Job Discovery', path: '/jobs' },
     { icon: Map, label: 'Career Pathway', path: '/pathway' },
     { icon: FileText, label: 'CV Management', path: '/cv' },
+    { icon: DollarSign, label: 'Salary Negotiator', path: '/negotiator' },
     { icon: User, label: 'Profile', path: '/profile' },
 ];
 

@@ -143,4 +143,22 @@ export const answerCareerQuestion = async (question: string, cvContext?: string)
     return response.choices[0].message.content;
 };
 
+export const generateNegotiationStrategy = async (offerDetails: string, cvContext: string) => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: 'You are a master salary negotiator. Analyze the job offer and user CV to provide a step-by-step negotiation strategy, including specific scripts for email and verbal negotiation. Be firm but professional.'
+            },
+            {
+                role: 'user',
+                content: `Offer Details: ${offerDetails}\n\nCandidate CV Info: ${cvContext}`
+            }
+        ]
+    });
+
+    return response.choices[0].message.content || 'Failed to generate strategy.';
+};
+
 export default openai;

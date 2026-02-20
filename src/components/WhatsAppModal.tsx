@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, MessageCircle, CheckCircle2, Phone, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface WhatsAppModalProps {
     isOpen: boolean;
@@ -15,9 +16,26 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStep('processing');
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setStep('success');
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    whatsapp_number: phoneNumber,
+                    whatsapp_alerts: true
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            setStep('success');
+        } catch (err) {
+            console.error('WhatsApp connection failed:', err);
+            setStep('input');
+        }
     };
 
     return (

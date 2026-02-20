@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Mail, Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, Github } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
@@ -36,12 +36,55 @@ export default function Register() {
         }
     };
 
+    const handleSocialLogin = async (provider: 'google' | 'github') => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { error: socialError } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: `${window.location.origin}/dashboard`,
+                },
+            });
+            if (socialError) throw socialError;
+        } catch (err: any) {
+            setError(err.message || `Error signing up with ${provider}`);
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="space-y-2">
                 <h1 className="text-3xl font-bold text-slate-900">Create Account</h1>
                 <p className="text-slate-500 font-medium">Start your career intelligence journey today.</p>
             </header>
+
+            <div className="grid grid-cols-2 gap-4">
+                <button
+                    onClick={() => handleSocialLogin('google')}
+                    disabled={isLoading}
+                    className="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700 disabled:opacity-50"
+                >
+                    <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="google" /> Google
+                </button>
+                <button
+                    onClick={() => handleSocialLogin('github')}
+                    disabled={isLoading}
+                    className="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700 disabled:opacity-50"
+                >
+                    <Github className="w-4 h-4" /> Github
+                </button>
+            </div>
+
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-slate-100"></span>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-4 text-slate-400 font-bold tracking-widest">Or sign up with email</span>
+                </div>
+            </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-2">

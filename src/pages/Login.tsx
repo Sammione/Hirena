@@ -30,6 +30,23 @@ export default function Login() {
         }
     };
 
+    const handleSocialLogin = async (provider: 'google' | 'github') => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { error: socialError } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: `${window.location.origin}/dashboard`,
+                },
+            });
+            if (socialError) throw socialError;
+        } catch (err: any) {
+            setError(err.message || `Error signing in with ${provider}`);
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="space-y-2">
@@ -38,10 +55,18 @@ export default function Login() {
             </header>
 
             <div className="grid grid-cols-2 gap-4">
-                <button className="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700">
+                <button
+                    onClick={() => handleSocialLogin('google')}
+                    disabled={isLoading}
+                    className="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700 disabled:opacity-50"
+                >
                     <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="google" /> Google
                 </button>
-                <button className="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700">
+                <button
+                    onClick={() => handleSocialLogin('github')}
+                    disabled={isLoading}
+                    className="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700 disabled:opacity-50"
+                >
                     <Github className="w-4 h-4" /> Github
                 </button>
             </div>

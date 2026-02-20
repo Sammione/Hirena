@@ -6,6 +6,8 @@ CREATE TABLE profiles (
   experience_level TEXT,
   skills TEXT[],
   onboarded BOOLEAN DEFAULT FALSE,
+  whatsapp_number TEXT,
+  whatsapp_alerts BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
 
