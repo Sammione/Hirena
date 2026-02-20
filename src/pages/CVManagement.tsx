@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import {
     FileText,
     Upload,
@@ -32,10 +33,27 @@ export default function CVManagement() {
 
     const analysisRef = useRef<HTMLDivElement>(null);
 
-    const cvVersions = [
-        { name: 'Standard Software Engineer', type: 'Local', status: 'Optimized', updatedAt: '2 hours ago', score: 92 },
-        { name: 'Remote Frontend Role', type: 'International', status: 'In Review', updatedAt: 'Yesterday', score: 85 },
-    ];
+    const [cvVersions, setCvVersions] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetchCVs();
+    }, []);
+
+    const fetchCVs = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase.from('cv_analyses')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching CVs:', error);
+        } else {
+            setCvVersions(data || []);
+        }
+    };
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -46,6 +64,24 @@ export default function CVManagement() {
         try {
             const text = await extractTextFromFile(file);
             const result = await analyzeCV(text);
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { error: saveError } = await supabase.from('cv_analyses').insert({
+                    user_id: user.id,
+                    cv_text: text,
+                    score: result.score,
+                    readiness_score: result.readinessScore,
+                    sections: result.sections,
+                    strengths: result.strengths,
+                    improvements: result.improvements,
+                    skill_gaps: result.skillGaps
+                });
+
+                if (saveError) throw saveError;
+                fetchCVs(); // Refresh the list
+            }
+
             setAnalysisResult(result);
         } catch (err: any) {
             console.error('Analysis failed:', err);
@@ -137,8 +173,8 @@ export default function CVManagement() {
                                                 {cv.status}
                                             </span>
                                         </div>
-                                        <h3 className="text-lg font-bold text-slate-900 mb-1">{cv.name}</h3>
-                                        <p className="text-sm text-slate-500 mb-4 font-medium">{cv.type} Version • Updated {cv.updatedAt}</p>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-1">CV Analysis #{cvVersions.length - i}</h3>
+                                        <p className="text-sm text-slate-500 mb-4 font-medium">Auto-saved Version • {new Date(cv.created_at).toLocaleDateString()}</p>
                                     </div>
 
                                     <div className="space-y-4">

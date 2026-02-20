@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 import {
     TrendingUp,
     Briefcase,
@@ -28,10 +29,68 @@ const skillGapData = [
 ];
 
 export default function Dashboard() {
+    const [stats, setStats] = useState({
+        readinessScore: 0,
+        jobMatches: 0,
+        skillGaps: [],
+        userName: 'User'
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        setIsLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Get profile
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            // Get latest analysis
+            const { data: analysis } = await supabase
+                .from('cv_analyses')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (analysis) {
+                setStats({
+                    readinessScore: analysis.readiness_score || 0,
+                    jobMatches: 124, // Keep mock for now or calculate later
+                    skillGaps: analysis.skill_gaps || [],
+                    userName: profile?.full_name?.split(' ')[0] || 'User'
+                });
+            } else {
+                setStats(prev => ({ ...prev, userName: profile?.full_name?.split(' ')[0] || 'User' }));
+            }
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const displaySkillGapData = stats.skillGaps.length > 0
+        ? stats.skillGaps.slice(0, 3).map((skill, i) => ({
+            name: skill,
+            gap: 40 + (i * 10), // Simulated gap value
+            fill: i === 0 ? '#102a43' : i === 1 ? '#10b981' : '#334e68'
+        }))
+        : skillGapData;
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <header>
-                <h1 className="text-2xl font-bold text-slate-900">Welcome back, Chidubem</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Welcome back, {stats.userName}</h1>
                 <p className="text-slate-500">Here's what's happening with your career progress today.</p>
             </header>
 
@@ -39,7 +98,7 @@ export default function Dashboard() {
                 <StatCard
                     icon={TrendingUp}
                     label="Readiness Score"
-                    value={`${userStats.readinessScore}%`}
+                    value={`${stats.readinessScore}%`}
                     trend="+5% this month"
                     color="emerald"
                 />
@@ -53,7 +112,7 @@ export default function Dashboard() {
                 <StatCard
                     icon={Target}
                     label="Skill Gaps"
-                    value="3 Priority"
+                    value={`${stats.skillGaps.length} Priority`}
                     trend="Decreased by 2"
                     color="indigo"
                 />
@@ -76,7 +135,7 @@ export default function Dashboard() {
                     </div>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={skillGapData}>
+                            <BarChart data={displaySkillGapData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />

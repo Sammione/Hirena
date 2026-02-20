@@ -4,20 +4,60 @@ import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sp
 import { mockJobs } from '../data/mockData';
 import { cn } from '../utils/cn';
 import { matchSkillsToJob } from '../lib/openai';
+import { searchJobs, Job } from '../lib/jobs';
+import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
+import { useEffect } from 'react';
 
 export default function JobDiscovery() {
     const navigate = useNavigate();
+    const [jobs, setJobs] = useState<Job[]>([]);
+    const [isLoadingJobs, setIsLoadingJobs] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('React Developer');
     const [filter, setFilter] = useState('All');
     const [matchingJobId, setMatchingJobId] = useState<string | null>(null);
     const [matchResults, setMatchResults] = useState<Record<string, any>>({});
+    const [userCV, setUserCV] = useState<string>('');
 
-    const handleMatch = async (job: any) => {
+    useEffect(() => {
+        loadUserCV();
+        handleSearch();
+    }, []);
+
+    const loadUserCV = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+            .from('cv_analyses')
+            .select('cv_text')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (data) {
+            setUserCV(data.cv_text);
+        }
+    };
+
+    const handleSearch = async () => {
+        setIsLoadingJobs(true);
+        try {
+            const results = await searchJobs(searchQuery);
+            setJobs(results);
+        } catch (error) {
+            console.error('Search failed:', error);
+        } finally {
+            setIsLoadingJobs(false);
+        }
+    };
+
+    const handleMatch = async (job: Job) => {
         setMatchingJobId(job.id);
         try {
-            // Simulated CV content for the demo
-            const cvText = "Expert React Developer with 5 years experience in TypeScript, Node.js and Tailwind CSS. Built multiple dashboards and fintech apps.";
-            const jobDescription = `${job.title} at ${job.company}. Requires ${job.description}`;
+            const cvText = userCV || "Expert Developer looking for new opportunities.";
+            const jobDescription = `${job.title} at ${job.company}. ${job.description}`;
 
             const result = await matchSkillsToJob(cvText, jobDescription);
             setMatchResults(prev => ({ ...prev, [job.id]: result }));
@@ -61,7 +101,23 @@ export default function JobDiscovery() {
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Job Discovery</h1>
-                    <p className="text-slate-500">Opportunities matched with your skill profile.</p>
+                    <div className="flex items-center gap-2 mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus-within:ring-2 focus-within:ring-brand-emerald-500/20 transition-all">
+                        <Search className="w-4 h-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search roles (e.g. React Developer)..."
+                            className="bg-transparent outline-none text-sm font-medium text-slate-700 w-64"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                        <button
+                            onClick={handleSearch}
+                            className="text-xs font-bold text-brand-emerald-600 hover:text-brand-emerald-700 ml-2"
+                        >
+                            Search
+                        </button>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-medium text-slate-700">
@@ -86,8 +142,17 @@ export default function JobDiscovery() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                    {mockJobs.map((job) => (
-                        <div key={job.id} className="card p-6 border-slate-200 hover:border-brand-emerald-300 hover:shadow-xl hover:shadow-brand-emerald-500/5 transition-all group overflow-hidden relative">
+                    {isLoadingJobs ? (
+                        <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <Loader2 className="w-10 h-10 text-brand-emerald-500 animate-spin mb-4" />
+                            <p className="text-slate-500 font-bold">Fetching live jobs for you...</p>
+                        </div>
+                    ) : jobs.length === 0 ? (
+                        <div className="text-center py-20">
+                            <p className="text-slate-500 font-medium">No results found. Try a different search term.</p>
+                        </div>
+                    ) : jobs.map((job) => (
+                        <div key={job.id} onClick={() => window.open(job.url, '_blank')} className="card p-6 border-slate-200 hover:border-brand-emerald-300 hover:shadow-xl hover:shadow-brand-emerald-500/5 transition-all group overflow-hidden relative cursor-pointer">
                             {matchResults[job.id] && (
                                 <div className="absolute top-0 right-0 px-4 py-1 bg-brand-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-sm">
                                     AI Verified
@@ -109,7 +174,7 @@ export default function JobDiscovery() {
                                                 "px-3 py-1 rounded-full text-xs font-black inline-block",
                                                 matchResults[job.id] ? "bg-brand-emerald-500 text-white" : "bg-brand-emerald-50 text-brand-emerald-700"
                                             )}>
-                                                {matchResults[job.id]?.match_percentage || job.match}% Match
+                                                {matchResults[job.id]?.match_percentage || '??'}% Match
                                             </div>
                                             <p className="text-sm font-bold text-slate-900 mt-2">{job.salary}</p>
                                         </div>

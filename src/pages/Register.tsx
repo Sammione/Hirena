@@ -3,12 +3,37 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Mail, Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
 
+import { supabase } from '../lib/supabase';
+import { useState } from 'react';
+
 export default function Register() {
     const { register, handleSubmit } = useForm();
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const onSubmit = (data: any) => {
-        console.log(data);
-        window.location.href = '/dashboard';
+    const onSubmit = async (data: any) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { error: signUpError } = await supabase.auth.signUp({
+                email: data.email,
+                password: data.password,
+                options: {
+                    data: {
+                        full_name: data.name,
+                    }
+                }
+            });
+
+            if (signUpError) throw signUpError;
+
+            // Redirect to dashboard or show check email message
+            window.location.href = '/dashboard';
+        } catch (err: any) {
+            setError(err.message || 'Error creating account');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -65,8 +90,18 @@ export default function Register() {
                     </p>
                 </div>
 
-                <button type="submit" className="w-full py-4 bg-brand-blue-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-blue-800 transition-all shadow-xl shadow-brand-blue-900/10 text-lg">
-                    Create Free Account <ArrowRight className="w-5 h-5" />
+                {error && (
+                    <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-lg animate-in slide-in-from-top-1">
+                        {error}
+                    </div>
+                )}
+
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-4 bg-brand-blue-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-blue-800 transition-all shadow-xl shadow-brand-blue-900/10 text-lg disabled:opacity-50"
+                >
+                    {isLoading ? 'Creating Account...' : 'Create Free Account'} <ArrowRight className="w-5 h-5" />
                 </button>
             </form>
 

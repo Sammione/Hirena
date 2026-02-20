@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { CheckCircle2, Circle, Lock, ArrowRight, BookOpen, Clock, Award, Loader2, Sparkles } from 'lucide-react';
 import { careerRoadmap as mockRoadmap } from '../data/mockData';
 import { cn } from '../utils/cn';
@@ -9,11 +10,52 @@ export default function CareerPathway() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [customRoadmap, setCustomRoadmap] = useState<CareerRoadmap | null>(null);
 
+    useEffect(() => {
+        fetchRoadmap();
+    }, []);
+
+    const fetchRoadmap = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+            .from('career_roadmaps')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (data) {
+            setTargetRole(data.objective);
+            setCustomRoadmap({
+                milestones: data.milestones,
+                summary: data.summary
+            });
+        }
+    };
+
     const handleGenerateRoadmap = async () => {
         if (!targetRole) return;
         setIsGenerating(true);
         try {
-            const roadmap = await createCareerRoadmap(targetRole, ['JavaScript', 'React', 'Tailwind']);
+            // Get current user skills for context
+            const { data: { user } } = await supabase.auth.getUser();
+            const currentSkills = ['JavaScript', 'React', 'Tailwind']; // Fallback for now
+
+            const roadmap = await createCareerRoadmap(targetRole, currentSkills);
+
+            if (user) {
+                const { error: saveError } = await supabase.from('career_roadmaps').insert({
+                    user_id: user.id,
+                    objective: targetRole,
+                    summary: roadmap.summary,
+                    milestones: roadmap.milestones
+                });
+
+                if (saveError) throw saveError;
+            }
+
             setCustomRoadmap(roadmap);
         } catch (error) {
             console.error('Failed to generate roadmap:', error);

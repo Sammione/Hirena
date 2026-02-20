@@ -2,6 +2,8 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { AuthLayout } from './layouts/AuthLayout';
+import { supabase } from './lib/supabase';
+import { useState, useEffect } from 'react';
 
 // Lazy load pages for performance
 const Landing = lazy(() => import('./pages/Landing'));
@@ -21,6 +23,32 @@ const PageLoader = () => (
     </div>
 );
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    const [user, setUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const initAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setUser(session?.user ?? null);
+            setLoading(false);
+        };
+
+        initAuth();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    if (loading) return <PageLoader />;
+    if (!user) return <Navigate to="/login" replace />;
+
+    return <>{children}</>;
+};
+
 function App() {
     return (
         <Router>
@@ -37,13 +65,13 @@ function App() {
                     </Route>
 
                     {/* App Routes */}
-                    <Route element={<MainLayout />}>
+                    <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/jobs" element={<JobDiscovery />} />
                         <Route path="/pathway" element={<CareerPathway />} />
                         <Route path="/cv" element={<CVManagement />} />
                         <Route path="/profile" element={<Profile />} />
-                        <Route path="/settings" element={<Profile />} /> {/* Placeholder */}
+                        <Route path="/settings" element={<Profile />} />
                     </Route>
 
                     {/* Fallback */}
