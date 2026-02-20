@@ -33,19 +33,29 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         const initAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                setUser(session.user);
-                // Check onboarding status
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('onboarded')
-                    .eq('id', session.user.id)
-                    .single();
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    setUser(session.user);
+                    // Check onboarding status
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('onboarded')
+                        .eq('id', session.user.id)
+                        .single();
 
-                setIsOnboarded(profile?.onboarded ?? false);
+                    if (profileError) {
+                        console.warn('Profile not found or error fetching:', profileError);
+                        setIsOnboarded(false);
+                    } else {
+                        setIsOnboarded(profile?.onboarded ?? false);
+                    }
+                }
+            } catch (err) {
+                console.error('Auth initialization failed:', err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         initAuth();
@@ -53,12 +63,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
             setUser(session?.user ?? null);
             if (session?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('onboarded')
-                    .eq('id', session.user.id)
-                    .single();
-                setIsOnboarded(profile?.onboarded ?? false);
+                try {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('onboarded')
+                        .eq('id', session.user.id)
+                        .single();
+                    setIsOnboarded(profile?.onboarded ?? false);
+                } catch (err) {
+                    setIsOnboarded(false);
+                }
             } else {
                 setIsOnboarded(null);
             }
