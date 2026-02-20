@@ -5,6 +5,7 @@ CREATE TABLE profiles (
   target_role TEXT,
   experience_level TEXT,
   skills TEXT[],
+  onboarded BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
 

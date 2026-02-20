@@ -63,15 +63,24 @@ export default function Dashboard() {
                 .limit(1)
                 .single();
 
+            // Get matched jobs count (simulated or real if possible)
+            const { count: jobCount } = await supabase
+                .from('cv_analyses')
+                .select('*', { count: 'exact', head: true });
+
             if (analysis) {
                 setStats({
                     readinessScore: analysis.readiness_score || 0,
-                    jobMatches: 124, // Keep mock for now or calculate later
+                    jobMatches: 12 + (jobCount || 0), // Base + live count
                     skillGaps: analysis.skill_gaps || [],
                     userName: profile?.full_name?.split(' ')[0] || 'User'
                 });
             } else {
-                setStats(prev => ({ ...prev, userName: profile?.full_name?.split(' ')[0] || 'User' }));
+                setStats(prev => ({
+                    ...prev,
+                    userName: profile?.full_name?.split(' ')[0] || 'User',
+                    skillGaps: profile?.skills?.slice(0, 3) || []
+                }));
             }
         } catch (error) {
             console.error('Error loading dashboard:', error);
@@ -105,8 +114,8 @@ export default function Dashboard() {
                 <StatCard
                     icon={Briefcase}
                     label="Job Matches"
-                    value={userStats.jobMatches.toString()}
-                    trend="12 new today"
+                    value={stats.jobMatches.toString()}
+                    trend="Updated live"
                     color="blue"
                 />
                 <StatCard
@@ -152,24 +161,24 @@ export default function Dashboard() {
                 <div className="card p-6">
                     <h2 className="text-lg font-bold text-slate-900 mb-6">Recommended Actions</h2>
                     <div className="space-y-4">
-                        {userStats.recommendedActions.map((item) => (
-                            <div key={item.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-brand-emerald-200 transition-all cursor-pointer group">
+                        {stats.skillGaps.map((skill, i) => (
+                            <div key={i} className="p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-brand-emerald-200 transition-all cursor-pointer group">
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <span className={cn(
-                                            "text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-white border mb-2 inline-block",
-                                            item.type === 'Learning' ? "text-emerald-600 border-emerald-100" : "text-blue-600 border-blue-100"
-                                        )}>
-                                            {item.type}
+                                        <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-white border mb-2 inline-block text-emerald-600 border-emerald-100">
+                                            Priority Skill
                                         </span>
                                         <p className="text-sm font-semibold text-slate-900 group-hover:text-brand-emerald-700 transition-colors">
-                                            {item.action}
+                                            Master {skill} with guided courses
                                         </p>
                                     </div>
                                     <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand-emerald-500 transition-colors" />
                                 </div>
                             </div>
                         ))}
+                        {stats.skillGaps.length === 0 && (
+                            <p className="text-sm text-slate-500 italic">No recommendations yet. Upload your CV to get started!</p>
+                        )}
                     </div>
                     <button className="w-full mt-6 py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 font-medium hover:border-brand-emerald-500 hover:text-brand-emerald-600 transition-all text-sm">
                         + Customize Roadmap

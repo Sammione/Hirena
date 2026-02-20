@@ -13,16 +13,38 @@ export default function JobDiscovery() {
     const navigate = useNavigate();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoadingJobs, setIsLoadingJobs] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('React Developer');
+    const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('All');
     const [matchingJobId, setMatchingJobId] = useState<string | null>(null);
     const [matchResults, setMatchResults] = useState<Record<string, any>>({});
     const [userCV, setUserCV] = useState<string>('');
+    const lastSearchRef = React.useRef<string>('');
 
     useEffect(() => {
-        loadUserCV();
-        handleSearch();
+        const init = async () => {
+            await loadUserCV();
+            const role = await loadUserProfile();
+            handleSearch(role || 'React Developer');
+        };
+        init();
     }, []);
+
+    const loadUserProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const { data } = await supabase
+            .from('profiles')
+            .select('target_role')
+            .eq('id', user.id)
+            .single();
+
+        if (data?.target_role) {
+            setSearchQuery(data.target_role);
+            return data.target_role;
+        }
+        return null;
+    };
 
     const loadUserCV = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -41,10 +63,14 @@ export default function JobDiscovery() {
         }
     };
 
-    const handleSearch = async () => {
+    const handleSearch = async (queryOverride?: string) => {
+        const query = queryOverride || searchQuery;
+        if (!query || query === lastSearchRef.current) return;
+
+        lastSearchRef.current = query;
         setIsLoadingJobs(true);
         try {
-            const results = await searchJobs(searchQuery);
+            const results = await searchJobs(query);
             setJobs(results);
         } catch (error) {
             console.error('Search failed:', error);
@@ -112,7 +138,7 @@ export default function JobDiscovery() {
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         />
                         <button
-                            onClick={handleSearch}
+                            onClick={() => handleSearch()}
                             className="text-xs font-bold text-brand-emerald-600 hover:text-brand-emerald-700 ml-2"
                         >
                             Search
@@ -143,9 +169,19 @@ export default function JobDiscovery() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
                     {isLoadingJobs ? (
-                        <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                            <Loader2 className="w-10 h-10 text-brand-emerald-500 animate-spin mb-4" />
-                            <p className="text-slate-500 font-bold">Fetching live jobs for you...</p>
+                        <div className="space-y-6">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="card p-6 border-slate-200 animate-pulse">
+                                    <div className="flex gap-5">
+                                        <div className="w-16 h-16 bg-slate-200 rounded-xl" />
+                                        <div className="flex-1 space-y-4">
+                                            <div className="h-6 bg-slate-200 rounded w-1/3" />
+                                            <div className="h-4 bg-slate-100 rounded w-1/4" />
+                                            <div className="h-20 bg-slate-50 rounded" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : jobs.length === 0 ? (
                         <div className="text-center py-20">
@@ -224,12 +260,19 @@ export default function JobDiscovery() {
                                     )}
 
                                     <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between pt-6 border-t border-slate-50 gap-4">
-                                        <div className="flex gap-2">
-                                            {['React', 'TypeScript', 'Node.js'].map(skill => (
-                                                <span key={skill} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
-                                                    {skill}
-                                                </span>
-                                            ))}
+                                        <div className="flex flex-wrap gap-2">
+                                            {job.description.split('.').slice(0, 3).map(skillCandidate => {
+                                                const words = skillCandidate.trim().split(' ');
+                                                const word = words[words.length - 1];
+                                                if (word.length > 3 && word.length < 15) {
+                                                    return (
+                                                        <span key={word} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                                                            {word}
+                                                        </span>
+                                                    );
+                                                }
+                                                return null;
+                                            })}
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <button

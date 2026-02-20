@@ -15,6 +15,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 // Loading component
 const PageLoader = () => (
@@ -25,19 +26,40 @@ const PageLoader = () => (
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any>(null);
+    const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const initAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
+            if (session?.user) {
+                setUser(session.user);
+                // Check onboarding status
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('onboarded')
+                    .eq('id', session.user.id)
+                    .single();
+
+                setIsOnboarded(profile?.onboarded ?? false);
+            }
             setLoading(false);
         };
 
         initAuth();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
             setUser(session?.user ?? null);
+            if (session?.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('onboarded')
+                    .eq('id', session.user.id)
+                    .single();
+                setIsOnboarded(profile?.onboarded ?? false);
+            } else {
+                setIsOnboarded(null);
+            }
         });
 
         return () => subscription.unsubscribe();
@@ -45,6 +67,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
     if (loading) return <PageLoader />;
     if (!user) return <Navigate to="/login" replace />;
+
+    const isAtOnboarding = window.location.pathname === '/onboarding';
+    if (!isOnboarded && !isAtOnboarding) return <Navigate to="/onboarding" replace />;
+    if (isOnboarded && isAtOnboarding) return <Navigate to="/dashboard" replace />;
 
     return <>{children}</>;
 };
@@ -63,6 +89,8 @@ function App() {
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                     </Route>
+
+                    <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
                     {/* App Routes */}
                     <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>

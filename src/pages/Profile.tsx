@@ -1,8 +1,46 @@
-import React from 'react';
-import { User, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, Settings, Shield } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, Settings, Shield, Loader2 } from 'lucide-react';
 import { VoicePitch } from '../components/VoicePitch';
+import { supabase } from '../lib/supabase';
+import { useState, useEffect } from 'react';
+import { cn } from '../utils/cn';
 
 export default function Profile() {
+    const [profile, setProfile] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        setIsLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            setProfile(data);
+        } catch (err) {
+            console.error('Error fetching profile:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-10 h-10 text-brand-emerald-500 animate-spin mb-4" />
+                <p className="text-slate-500 font-bold">Loading your professional profile...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="card overflow-hidden">
@@ -14,11 +52,11 @@ export default function Profile() {
                 <div className="px-8 pb-8">
                     <div className="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-6">
                         <div className="w-32 h-32 rounded-3xl border-4 border-white bg-slate-100 overflow-hidden shadow-xl">
-                            <img src="https://i.pravatar.cc/150?u=chidubem" alt="profile" className="w-full h-full object-cover" />
+                            <img src={`https://i.pravatar.cc/150?u=${profile?.id}`} alt="profile" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 pb-2">
-                            <h1 className="text-3xl font-bold text-slate-900">Chidubem Okafor</h1>
-                            <p className="text-slate-500 font-medium">Full Stack Developer • Lagos, Nigeria</p>
+                            <h1 className="text-3xl font-bold text-slate-900">{profile?.full_name || 'Hirena Professional'}</h1>
+                            <p className="text-slate-500 font-medium">{profile?.target_role || 'Emerging Talent'} • Global</p>
                         </div>
                         <div className="flex gap-3 pb-2">
                             <button className="btn-primary px-6 py-2 rounded-xl">Edit Profile</button>
@@ -125,7 +163,7 @@ export default function Profile() {
                             <Award className="w-5 h-5 text-brand-emerald-500" /> Skills & Endorsements
                         </h2>
                         <div className="flex flex-wrap gap-2">
-                            {['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'AWS', 'Docker', 'System Design', 'UI/UX'].map(skill => (
+                            {(profile?.skills || ['Leadership', 'Analysis']).map((skill: string) => (
                                 <span key={skill} className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:border-brand-emerald-300 transition-all cursor-default">
                                     {skill}
                                 </span>
