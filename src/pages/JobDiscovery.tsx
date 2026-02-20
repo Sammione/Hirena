@@ -244,10 +244,10 @@ export default function JobDiscovery() {
                                                 Match with AI
                                             </button>
                                             <button
-                                                onClick={() => navigate('/cv')}
-                                                className="flex items-center gap-2 bg-white border border-brand-emerald-500 text-brand-emerald-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-emerald-50 transition-all"
+                                                onClick={() => navigate('/cv', { state: { jobTitle: job.title, jobDetails: job.description } })}
+                                                className="flex items-center gap-2 bg-white border border-brand-emerald-500 text-brand-emerald-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-emerald-50 transition-all font-sans"
                                             >
-                                                Tailor CV
+                                                Tailor Letter
                                             </button>
                                             <button className="flex items-center gap-2 bg-brand-blue-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-blue-800 transition-all shadow-lg shadow-brand-blue-900/10">
                                                 Apply Now <ChevronRight className="w-4 h-4" />

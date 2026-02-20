@@ -196,16 +196,39 @@ export default function CareerPathway() {
                                         )}
                                     </div>
 
-                                    <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {stage.skills.map(skill => (
-                                            <div key={skill} className="flex items-center gap-2">
-                                                <div className={cn(
-                                                    "w-2 h-2 rounded-full transition-colors duration-500",
-                                                    stage.status === 'Completed' ? "bg-brand-emerald-500" : "bg-slate-300 group-hover:bg-brand-emerald-300"
-                                                )}></div>
-                                                <span className="text-xs font-bold text-slate-600">{skill}</span>
+                                    <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col md:flex-row gap-6">
+                                        <div className="flex-1 grid grid-cols-2 gap-4">
+                                            {stage.skills.map(skill => (
+                                                <div key={skill} className="flex items-center gap-2">
+                                                    <div className={cn(
+                                                        "w-2 h-2 rounded-full transition-colors duration-500",
+                                                        stage.status === 'Completed' ? "bg-brand-emerald-500" : "bg-slate-300 group-hover:bg-brand-emerald-300"
+                                                    )}></div>
+                                                    <span className="text-xs font-bold text-slate-600">{skill}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {stage.status !== 'Locked' && (
+                                            <div className="flex flex-col gap-2 min-w-[140px]">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Learning Resources</p>
+                                                <a
+                                                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(stage.skills.join(' ') + ' tutorial')}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs font-bold text-brand-blue-900 hover:text-brand-emerald-500 flex items-center gap-1.5 transition-colors"
+                                                >
+                                                    <BookOpen className="w-3 h-3" /> YouTube Courses
+                                                </a>
+                                                <a
+                                                    href={`https://www.coursera.org/search?query=${encodeURIComponent(stage.skills[0])}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs font-bold text-brand-blue-900 hover:text-brand-emerald-500 flex items-center gap-1.5 transition-colors"
+                                                >
+                                                    <Award className="w-3 h-3" /> Coursera Masterclass
+                                                </a>
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
                                 </div>
                             </div>

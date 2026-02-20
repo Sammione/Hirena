@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
     FileText,
@@ -21,6 +22,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function CVManagement() {
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState('My CVs');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<CVAnalysis | null>(null);
@@ -30,6 +32,13 @@ export default function CVManagement() {
     const [bulletInput, setBulletInput] = useState('');
     const [coverLetter, setCoverLetter] = useState('');
     const [isGeneratingCL, setIsGeneratingCL] = useState(false);
+
+    useEffect(() => {
+        if (location.state?.jobDetails) {
+            setBulletInput(location.state.jobDetails);
+            setActiveTab('Expert Tools');
+        }
+    }, [location.state]);
 
     const analysisRef = useRef<HTMLDivElement>(null);
 
@@ -286,12 +295,30 @@ export default function CVManagement() {
                                     />
                                     <button
                                         onClick={async () => {
+                                            if (!bulletInput) return;
                                             setIsGeneratingCL(true);
+                                            setError(null);
                                             try {
-                                                const cl = await generateCoverLetter("User CV Context", bulletInput);
+                                                const { data: { user } } = await supabase.auth.getUser();
+                                                let cvToUse = "User looking for a role.";
+
+                                                if (user) {
+                                                    const { data } = await supabase
+                                                        .from('cv_analyses')
+                                                        .select('cv_text')
+                                                        .eq('user_id', user.id)
+                                                        .order('created_at', { ascending: false })
+                                                        .limit(1)
+                                                        .single();
+
+                                                    if (data) cvToUse = data.cv_text;
+                                                }
+
+                                                const cl = await generateCoverLetter(cvToUse, bulletInput);
                                                 setCoverLetter(cl);
-                                            } catch (err) {
-                                                setError('Failed to generate cover letter.');
+                                            } catch (err: any) {
+                                                console.error('CL generation failed:', err);
+                                                setError(err.message || 'Failed to generate cover letter.');
                                             } finally {
                                                 setIsGeneratingCL(false);
                                             }
@@ -375,7 +402,7 @@ export default function CVManagement() {
 
                                     <div className="space-y-4 pt-4">
                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top Improvements</h4>
-                                        {analysisResult.improvements.slice(0, 3).map((imp, i) => (
+                                        {analysisResult.improvements.slice(0, 3).map((imp: any, i: number) => (
                                             <div key={i} className="flex gap-3 items-start">
                                                 <div className="p-1 bg-emerald-50 rounded-md mt-0.5">
                                                     <Sparkles className="w-3 h-3 text-emerald-600" />
@@ -405,7 +432,7 @@ export default function CVManagement() {
                         <div className="relative z-10">
                             <h4 className="text-sm font-black uppercase tracking-widest mb-4 text-brand-emerald-400">Skill Gaps</h4>
                             <div className="flex flex-wrap gap-2 mb-6">
-                                {(analysisResult?.skillGaps || ['Docker', 'AWS', 'Kubernetes']).map((gap, i) => (
+                                {(analysisResult?.skillGaps || ['Docker', 'AWS', 'Kubernetes']).map((gap: any, i: number) => (
                                     <span key={i} className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md text-[10px] font-black text-white rounded-lg border border-white/10 group-hover:border-brand-emerald-400 transition-colors">
                                         {gap}
                                     </span>
