@@ -34,44 +34,58 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         let isMounted = true;
 
-        // Failsafe: Force loading to false after 3 seconds no matter what
+        // Failsafe: Force loading to false after 6 seconds (better for slow mobile connections)
         const timeout = setTimeout(() => {
             if (isMounted && loading) {
                 console.warn('ProtectedRoute: Auth check timed out, forcing load completion.');
                 setLoading(false);
             }
-        }, 3000);
+        }, 6000);
 
         const handleAuthAction = async (session: any) => {
             if (!isMounted) return;
 
-            setUser(session?.user ?? null);
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
 
-            if (session?.user) {
+            if (currentUser) {
                 try {
-                    const { data: profile } = await supabase
+                    // Small delay to ensure DB consistency on fast redirects
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    const { data: profile, error } = await supabase
                         .from('profiles')
                         .select('onboarded')
-                        .eq('id', session.user.id)
+                        .eq('id', currentUser.id)
                         .maybeSingle();
 
+                    if (error) throw error;
+
                     if (isMounted) {
-                        setIsOnboarded(profile?.onboarded ?? false);
+                        const onboarded = profile?.onboarded ?? false;
+                        setIsOnboarded(onboarded);
+
+                        // If we see they are onboarded, clear the temporary hint
+                        if (onboarded) {
+                            localStorage.removeItem('onboarding_in_progress');
+                        }
                     }
                 } catch (err) {
                     console.error('ProtectedRoute: Profile fetch error', err);
-                    if (isMounted) setIsOnboarded(false);
+                    // Check local hint if DB fetch fails
+                    const wasJustOnboarded = localStorage.getItem('onboarding_complete_hint') === 'true';
+                    if (isMounted) setIsOnboarded(wasJustOnboarded);
                 }
             } else {
                 if (isMounted) {
-                    setIsOnboarded(null); // Reset onboarded state if no user
+                    setIsOnboarded(null);
                 }
             }
 
             if (isMounted) setLoading(false);
         };
 
-        // Initial check
+        // Suppress session check if we just logged in via window.location
         supabase.auth.getSession().then(({ data: { session } }) => {
             handleAuthAction(session);
         });
@@ -91,28 +105,29 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         return <PageLoader />;
     }
 
-    // If not loading, and no user, redirect to login
     if (!user) {
         return <Navigate to="/login" replace />;
     }
 
-    // If user exists, handle onboarding redirects
     const isAtOnboarding = window.location.pathname === '/onboarding';
 
+    // If we're still checking, but have a user, don't redirect yet to avoid flicker
+    if (isOnboarded === null) {
+        return <PageLoader />;
+    }
+
     if (isOnboarded === false && !isAtOnboarding) {
-        // User is logged in but not onboarded, and not on the onboarding page
-        return <Navigate to="/onboarding" replace />;
+        // Double check local hint before forcing back to onboarding
+        const hint = localStorage.getItem('onboarding_complete_hint');
+        if (hint !== 'true') {
+            return <Navigate to="/onboarding" replace />;
+        }
     }
 
     if (isOnboarded === true && isAtOnboarding) {
-        // User is logged in and onboarded, but on the onboarding page
         return <Navigate to="/dashboard" replace />;
     }
 
-    // If user is logged in, onboarded state is consistent with current path,
-    // or isOnboarded is null (meaning profile check might still be pending or failed,
-    // but we have a user and are not forcing a redirect based on onboarding status yet),
-    // render children.
     return <>{children}</>;
 };
 

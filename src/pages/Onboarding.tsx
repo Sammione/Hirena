@@ -46,6 +46,9 @@ export default function Onboarding() {
 
             if (error) throw error;
 
+            // Set a hint for the ProtectedRoute while waiting for DB propagation
+            localStorage.setItem('onboarding_complete_hint', 'true');
+
             // Hard reload to refresh all auth states
             window.location.href = '/dashboard';
         } catch (err) {
