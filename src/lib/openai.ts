@@ -24,12 +24,21 @@ export type CVAnalysis = {
     skillGaps: string[];
 };
 
+export type CareerResource = {
+    title: string;
+    platform: 'YouTube' | 'Coursera' | 'Udemy' | 'Other';
+    url: string;
+    completed?: boolean;
+};
+
 export type CareerRoadmap = {
     milestones: {
         title: string;
         description: string;
         skillsToLearn: string[];
         estimatedDuration: string;
+        resources: CareerResource[];
+        completed?: boolean;
     }[];
     summary: string;
 };
@@ -112,7 +121,16 @@ export const createCareerRoadmap = async (objective: string, currentSkills: stri
         messages: [
             {
                 role: 'system',
-                content: 'You are a career development expert. Create a personalized career roadmap in JSON format. Include milestones with title, description, skillsToLearn (list), and estimatedDuration. Also include a summary.'
+                content: `You are a career development expert. Create a personalized career roadmap in JSON format. 
+                For each milestone, include:
+                - title: The name of the stage.
+                - description: A brief overview.
+                - skillsToLearn: A list of specific technologies or soft skills.
+                - estimatedDuration: Time to complete (e.g. 2 weeks).
+                - resources: A list of 2-3 REAL, high-quality learning resources (YouTube links, Coursera, etc.) with title, platform, and url.
+                
+                IMPORTANT: Provide ACTUAL valid URLs from platforms like YouTube, Coursera, Udemy, etc. matching the skills.
+                Include a professional summary for the whole roadmap.`
             },
             {
                 role: 'user',
