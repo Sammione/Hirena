@@ -126,16 +126,17 @@ export default function CareerPathway() {
                     <input
                         type="text"
                         placeholder="Enter target role (e.g. AI Engineer)"
-                        className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-emerald-500 min-w-[240px]"
+                        className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-emerald-500 min-w-[240px] text-sm font-medium"
                         value={targetRole}
                         onChange={(e) => setTargetRole(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleGenerateRoadmap()}
                     />
                     <button
                         onClick={handleGenerateRoadmap}
                         disabled={isGenerating || !targetRole}
-                        className="btn-primary px-6 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
+                        className="bg-brand-blue-900 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap disabled:opacity-50 font-bold shadow-lg shadow-brand-blue-900/10 hover:bg-brand-blue-800 transition-all active:scale-95"
                     >
-                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-brand-emerald-400" />}
                         Generate Roadmap
                     </button>
                 </div>
@@ -143,11 +144,30 @@ export default function CareerPathway() {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-3">
+                    {isGenerating && (
+                        <div className="space-y-8 animate-pulse">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="card p-8 border-slate-100 bg-white shadow-sm flex gap-6">
+                                    <div className="w-12 h-12 rounded-full bg-slate-200 flex-shrink-0" />
+                                    <div className="flex-1 space-y-4">
+                                        <div className="h-6 bg-slate-200 rounded w-1/4" />
+                                        <div className="h-4 bg-slate-100 rounded w-full" />
+                                        <div className="h-4 bg-slate-100 rounded w-2/3" />
+                                        <div className="pt-4 grid grid-cols-2 gap-4">
+                                            <div className="h-20 bg-slate-50 rounded-xl" />
+                                            <div className="h-20 bg-slate-50 rounded-xl" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     {!customRoadmap && !isGenerating && (
-                        <div className="text-center py-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl">
+                        <div className="text-center py-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl">
                             <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                            <h3 className="text-lg font-bold text-slate-900">No Roadmap Found</h3>
-                            <p className="text-slate-500 max-w-sm mx-auto">Enter a target role above and generate your AI-powered career pathway to get started.</p>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">No Roadmap Found</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto font-medium">Enter your dream role above and we'll build a custom AI learning path with real courses just for you.</p>
                         </div>
                     )}
 
