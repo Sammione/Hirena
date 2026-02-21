@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles } from 'lucide-react';
-import { mockJobs } from '../data/mockData';
 import { cn } from '../utils/cn';
 import { matchSkillsToJob } from '../lib/openai';
 import { searchJobs, Job } from '../lib/jobs';
 import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
-import { useEffect } from 'react';
 
 export default function JobDiscovery() {
     const navigate = useNavigate();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoadingJobs, setIsLoadingJobs] = useState(false);
+    const [isPaginating, setIsPaginating] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('All');
     const [matchingJobId, setMatchingJobId] = useState<string | null>(null);
     const [matchResults, setMatchResults] = useState<Record<string, any>>({});
     const [userCV, setUserCV] = useState<string>('');
-    const lastSearchRef = React.useRef<string>('');
+    const lastSearchRef = useRef<string>('');
 
     useEffect(() => {
         const init = async () => {
@@ -27,10 +27,12 @@ export default function JobDiscovery() {
             // Check session cache first
             const cachedJobs = sessionStorage.getItem('hirena_last_jobs');
             const cachedQuery = sessionStorage.getItem('hirena_last_query');
+            const cachedPage = sessionStorage.getItem('hirena_last_page');
 
             if (cachedJobs && cachedQuery) {
                 setJobs(JSON.parse(cachedJobs));
                 setSearchQuery(cachedQuery);
+                setCurrentPage(Number(cachedPage || 1));
                 lastSearchRef.current = cachedQuery;
             } else {
                 const role = await loadUserProfile();
@@ -74,22 +76,39 @@ export default function JobDiscovery() {
         }
     };
 
-    const handleSearch = async (queryOverride?: string) => {
+    const handleSearch = async (queryOverride?: string, isLoadMore = false) => {
         const query = queryOverride || searchQuery;
-        if (!query || query === lastSearchRef.current) return;
+        if (!query) return;
 
-        lastSearchRef.current = query;
-        setIsLoadingJobs(true);
+        // If it's a new search, reset everything
+        if (!isLoadMore) {
+            setIsLoadingJobs(true);
+            setCurrentPage(1);
+            lastSearchRef.current = query;
+        } else {
+            setIsPaginating(true);
+        }
+
         try {
-            const results = await searchJobs(query);
-            setJobs(results);
+            const pageToFetch = isLoadMore ? currentPage + 1 : 1;
+            const results = await searchJobs(query, pageToFetch);
+
+            const updatedJobs = isLoadMore ? [...jobs, ...results] : results;
+            setJobs(updatedJobs);
+
+            if (isLoadMore) {
+                setCurrentPage(pageToFetch);
+            }
+
             // Save to session cache
-            sessionStorage.setItem('hirena_last_jobs', JSON.stringify(results));
+            sessionStorage.setItem('hirena_last_jobs', JSON.stringify(updatedJobs));
             sessionStorage.setItem('hirena_last_query', query);
+            sessionStorage.setItem('hirena_last_page', (isLoadMore ? pageToFetch : 1).toString());
         } catch (error) {
             console.error('Search failed:', error);
         } finally {
             setIsLoadingJobs(false);
+            setIsPaginating(false);
         }
     };
 
@@ -201,120 +220,149 @@ export default function JobDiscovery() {
                         <div className="text-center py-20">
                             <p className="text-slate-500 font-medium">No results found. Try a different search term.</p>
                         </div>
-                    ) : jobs.map((job) => (
-                        <div key={job.id} onClick={() => window.open(job.url, '_blank')} className="card p-6 border-slate-200 hover:border-brand-emerald-300 hover:shadow-xl hover:shadow-brand-emerald-500/5 transition-all group overflow-hidden relative cursor-pointer">
-                            {matchResults[job.id] && (
-                                <div className="absolute top-0 right-0 px-4 py-1 bg-brand-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-sm">
-                                    AI Verified
-                                </div>
-                            )}
-
-                            <div className="flex gap-5">
-                                <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-100 flex-shrink-0">
-                                    <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-slate-900 group-hover:text-brand-emerald-600 transition-colors">{job.title}</h3>
-                                            <p className="text-slate-500 font-medium">{job.company}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className={cn(
-                                                "px-3 py-1 rounded-full text-xs font-black inline-block",
-                                                matchResults[job.id] ? "bg-brand-emerald-500 text-white" : "bg-brand-emerald-50 text-brand-emerald-700"
-                                            )}>
-                                                {matchResults[job.id]?.match_percentage || '??'}% Match
-                                            </div>
-                                            <p className="text-sm font-bold text-slate-900 mt-2">{job.salary}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 mt-4 text-sm text-slate-500 font-medium">
-                                        <div className="flex items-center gap-1.5">
-                                            <MapPin className="w-4 h-4" /> {job.location}
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <Briefcase className="w-4 h-4" /> {job.type}
-                                        </div>
-                                        <div className="ml-auto text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                            Posted {job.posted}
-                                        </div>
-                                    </div>
-
+                    ) : (
+                        <div className="space-y-6">
+                            {jobs.map((job) => (
+                                <div key={job.id} onClick={() => window.open(job.url, '_blank')} className="card p-6 border-slate-200 hover:border-brand-emerald-300 hover:shadow-xl hover:shadow-brand-emerald-500/5 transition-all group overflow-hidden relative cursor-pointer">
                                     {matchResults[job.id] && (
-                                        <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 animate-in slide-in-from-top-2">
-                                            <div className="flex items-center gap-2 mb-3 text-brand-emerald-600">
-                                                <Sparkles className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase tracking-widest">AI Matching Analysis</span>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Matching Skills</p>
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {matchResults[job.id].matching_skills?.map((s: string) => (
-                                                            <span key={s} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded">
-                                                                {s}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-brand-blue-900 uppercase mb-2">Missing Skills</p>
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {matchResults[job.id].missing_skills?.map((s: string) => (
-                                                            <span key={s} className="px-2 py-0.5 bg-brand-blue-50 text-brand-blue-900 text-[10px] font-bold rounded">
-                                                                {s}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div className="absolute top-0 right-0 px-4 py-1 bg-brand-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-sm">
+                                            AI Verified
                                         </div>
                                     )}
 
-                                    <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between pt-6 border-t border-slate-50 gap-4">
-                                        <div className="flex flex-wrap gap-2">
-                                            {job.description.split('.').slice(0, 3).map(skillCandidate => {
-                                                const words = skillCandidate.trim().split(' ');
-                                                const word = words[words.length - 1];
-                                                if (word.length > 3 && word.length < 15) {
-                                                    return (
-                                                        <span key={word} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
-                                                            {word}
-                                                        </span>
-                                                    );
-                                                }
-                                                return null;
-                                            })}
+                                    <div className="flex gap-5">
+                                        <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-100 flex-shrink-0">
+                                            <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleMatch(job);
-                                                }}
-                                                disabled={matchingJobId === job.id}
-                                                className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all disabled:opacity-50"
-                                            >
-                                                {matchingJobId === job.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-brand-emerald-500" />}
-                                                Match with AI
-                                            </button>
-                                            <button
-                                                onClick={() => navigate('/cv', { state: { jobTitle: job.title, jobDetails: job.description } })}
-                                                className="flex items-center gap-2 bg-white border border-brand-emerald-500 text-brand-emerald-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-emerald-50 transition-all font-sans"
-                                            >
-                                                Tailor Letter
-                                            </button>
-                                            <button className="flex items-center gap-2 bg-brand-blue-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-blue-800 transition-all shadow-lg shadow-brand-blue-900/10">
-                                                Apply Now <ChevronRight className="w-4 h-4" />
-                                            </button>
+                                        <div className="flex-1">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-brand-emerald-600 transition-colors">{job.title}</h3>
+                                                    <p className="text-slate-500 font-medium">{job.company}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className={cn(
+                                                        "px-3 py-1 rounded-full text-xs font-black inline-block",
+                                                        matchResults[job.id] ? "bg-brand-emerald-500 text-white" : "bg-brand-emerald-50 text-brand-emerald-700"
+                                                    )}>
+                                                        {matchResults[job.id]?.match_percentage || '??'}% Match
+                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-900 mt-2">{job.salary}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-4 mt-4 text-sm text-slate-500 font-medium">
+                                                <div className="flex items-center gap-1.5">
+                                                    <MapPin className="w-4 h-4" /> {job.location}
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Briefcase className="w-4 h-4" /> {job.type}
+                                                </div>
+                                                <div className="ml-auto text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                                    Posted {job.posted}
+                                                </div>
+                                            </div>
+
+                                            {matchResults[job.id] && (
+                                                <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 animate-in slide-in-from-top-2">
+                                                    <div className="flex items-center gap-2 mb-3 text-brand-emerald-600">
+                                                        <Sparkles className="w-4 h-4" />
+                                                        <span className="text-xs font-bold uppercase tracking-widest">AI Matching Analysis</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Matching Skills</p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {matchResults[job.id].matching_skills?.map((s: string) => (
+                                                                    <span key={s} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded">
+                                                                        {s}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-brand-blue-900 uppercase mb-2">Missing Skills</p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {matchResults[job.id].missing_skills?.map((s: string) => (
+                                                                    <span key={s} className="px-2 py-0.5 bg-brand-blue-50 text-brand-blue-900 text-[10px] font-bold rounded">
+                                                                        {s}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between pt-6 border-t border-slate-50 gap-4">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {job.description.split('.').slice(0, 3).map(skillCandidate => {
+                                                        const words = skillCandidate.trim().split(' ');
+                                                        const word = words[words.length - 1];
+                                                        if (word.length > 3 && word.length < 15) {
+                                                            return (
+                                                                <span key={word} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                                                                    {word}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })}
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMatch(job);
+                                                        }}
+                                                        disabled={matchingJobId === job.id}
+                                                        className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all disabled:opacity-50"
+                                                    >
+                                                        {matchingJobId === job.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-brand-emerald-500" />}
+                                                        Match with AI
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate('/cv', { state: { jobTitle: job.title, jobDetails: job.description } });
+                                                        }}
+                                                        className="flex items-center gap-2 bg-white border border-brand-emerald-500 text-brand-emerald-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-emerald-50 transition-all font-sans"
+                                                    >
+                                                        Tailor Letter
+                                                    </button>
+                                                    <button className="flex items-center gap-2 bg-brand-blue-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-blue-800 transition-all shadow-lg shadow-brand-blue-900/10">
+                                                        Apply Now <ChevronRight className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            ))}
+
+                            {jobs.length > 0 && (
+                                <div className="pt-8 flex justify-center">
+                                    <button
+                                        onClick={() => handleSearch(undefined, true)}
+                                        disabled={isPaginating}
+                                        className="flex items-center gap-3 bg-white border-2 border-slate-100 text-slate-600 px-10 py-4 rounded-2xl font-bold hover:border-brand-emerald-500 hover:text-brand-emerald-600 hover:bg-brand-emerald-50/30 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
+                                    >
+                                        {isPaginating ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Loading More Jobs...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Explore More Jobs
+                                                <ChevronRight className="w-5 h-5" />
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                    ))}
+                    )}
                 </div>
 
                 <div className="space-y-6">
