@@ -120,7 +120,7 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
 
                             <div className="flex flex-col gap-3 px-4">
                                 <a
-                                    href={`https://wa.me/2348120628065?text=START%20HIRENA%20ALERTS`}
+                                    href={`https://wa.me/15551783237?text=START%20HIRENA%20ALERTS`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full bg-brand-emerald-500 text-white py-4 rounded-xl font-bold hover:bg-brand-emerald-600 transition-all shadow-lg shadow-brand-emerald-500/20 flex items-center justify-center gap-2"
