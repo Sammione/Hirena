@@ -98,15 +98,15 @@ export default function CareerPathway() {
         await updateRoadmapInDB(newRoadmap);
     };
 
-    const roadmapToDisplay = customRoadmap
+    const roadmapToDisplay = (customRoadmap && Array.isArray(customRoadmap.milestones))
         ? customRoadmap.milestones.map((m, i) => ({
             id: i + 1,
-            title: m.title,
-            status: m.completed ? 'Completed' : (i === 0 || customRoadmap.milestones[i - 1]?.completed ? 'In Progress' : 'Locked'),
-            duration: m.estimatedDuration,
-            skills: m.skillsToLearn,
-            description: m.description,
-            resources: m.resources || []
+            title: m?.title || 'Unknown Milestone',
+            status: m?.completed ? 'Completed' : (i === 0 || customRoadmap.milestones[i - 1]?.completed ? 'In Progress' : 'Locked'),
+            duration: m?.estimatedDuration || 'TBD',
+            skills: Array.isArray(m?.skillsToLearn) ? m.skillsToLearn : [],
+            description: m?.description || '',
+            resources: Array.isArray(m?.resources) ? m.resources : []
         }))
         : [];
 
