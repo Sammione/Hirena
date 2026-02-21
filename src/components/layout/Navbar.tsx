@@ -1,7 +1,29 @@
-import React from 'react';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, Loader2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useState, useEffect } from 'react';
 
 export function Navbar({ onMenuClick }: { onMenuClick: () => void }) {
+    const [profile, setProfile] = useState<any>(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            setProfile(data);
+        };
+        fetchProfile();
+    }, []);
+
+    const name = profile?.full_name || 'Hirena Talent';
+    const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+
     return (
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-40">
             <div className="flex items-center gap-4 flex-1">
@@ -31,11 +53,11 @@ export function Navbar({ onMenuClick }: { onMenuClick: () => void }) {
                 <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block"></div>
                 <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-all">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-semibold text-slate-900 leading-none">Chidubem Okafor</p>
-                        <p className="text-xs text-brand-emerald-600 font-medium">Pro Member</p>
+                        <p className="text-sm font-semibold text-slate-900 leading-none">{name}</p>
+                        <p className="text-xs text-brand-emerald-600 font-medium tracking-widest uppercase">Member</p>
                     </div>
-                    <div className="w-9 h-9 bg-brand-blue-900 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                        CO
+                    <div className="w-9 h-9 bg-brand-blue-900 rounded-full flex items-center justify-center text-white font-black text-xs">
+                        {initials}
                     </div>
                 </div>
             </div>

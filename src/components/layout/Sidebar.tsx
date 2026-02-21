@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import {
     LayoutDashboard,
     Search,
@@ -101,7 +102,13 @@ export function Sidebar({ onClose, onOpenWhatsApp }: { onClose?: () => void, onO
                         <Settings className="w-5 h-5" />
                         <span className="font-medium">Settings</span>
                     </NavLink>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 mt-2">
+                    <button
+                        onClick={async () => {
+                            await supabase.auth.signOut();
+                            window.location.href = '/login';
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 mt-2"
+                    >
                         <LogOut className="w-5 h-5" />
                         <span className="font-medium">Log Out</span>
                     </button>
