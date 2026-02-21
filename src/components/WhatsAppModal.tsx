@@ -31,6 +31,14 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
 
             if (error) throw error;
 
+            // Attempt to send a welcome message (Note: may fail due to CORS on direct browser calls)
+            try {
+                const { sendWhatsAppMessage } = await import('../lib/twilio');
+                await sendWhatsAppMessage(phoneNumber, "Welcome to Hirena Job Alerts! You are now connected.");
+            } catch (twilioErr) {
+                console.warn('Auto-welcome message failed (likely CORS). User should still use the manual button.', twilioErr);
+            }
+
             setStep('success');
         } catch (err) {
             console.error('WhatsApp connection failed:', err);
@@ -120,7 +128,7 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
 
                             <div className="flex flex-col gap-3 px-4">
                                 <a
-                                    href={`https://wa.me/15551783237?text=START%20HIRENA%20ALERTS`}
+                                    href={`https://wa.me/15706831648?text=START%20HIRENA%20ALERTS`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full bg-brand-emerald-500 text-white py-4 rounded-xl font-bold hover:bg-brand-emerald-600 transition-all shadow-lg shadow-brand-emerald-500/20 flex items-center justify-center gap-2"
