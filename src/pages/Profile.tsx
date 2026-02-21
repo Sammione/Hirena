@@ -91,22 +91,33 @@ export default function Profile() {
 
         setIsParsing(true);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
             const text = await extractTextFromFile(file);
             const data = await parseCVToProfile(text);
 
-            setEditData(prev => ({
-                ...prev,
-                full_name: data.full_name || prev.full_name,
-                target_role: data.target_role || prev.target_role,
-                email: data.email || prev.email,
-                phone: data.phone || prev.phone,
-                location: data.location || prev.location,
-                skills: Array.from(new Set([...prev.skills, ...(data.skills || [])]))
-            }));
+            // Immediately save to database for "it just works" experience
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: data.full_name || editData.full_name,
+                    target_role: data.target_role || editData.target_role,
+                    email: data.email || editData.email,
+                    phone: data.phone || editData.phone,
+                    location: data.location || editData.location,
+                    skills: Array.from(new Set([...editData.skills, ...(data.skills || [])])),
+                    onboarded: true
+                })
+                .eq('id', user.id);
 
-            setIsEditing(true); // Switch to edit mode to review parsing results
+            if (error) throw error;
+
+            // Refresh UI
+            await fetchProfile();
+            console.log('Profile auto-updated from CV');
         } catch (err) {
-            console.error('Error parsing CV:', err);
+            console.error('Error parsing/saving CV profile:', err);
         } finally {
             setIsParsing(false);
         }
