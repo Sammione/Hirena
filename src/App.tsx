@@ -33,42 +33,34 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         let isMounted = true;
-        let initialCheckDone = false; // Flag to ensure loading is set to false only after the first event
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
+        // Failsafe: Force loading to false after 3 seconds no matter what
+        const timeout = setTimeout(() => {
+            if (isMounted && loading) {
+                console.warn('ProtectedRoute: Auth check timed out, forcing load completion.');
+                setLoading(false);
+            }
+        }, 3000);
+
+        const handleAuthAction = async (session: any) => {
             if (!isMounted) return;
-
-            console.log('onAuthStateChange event:', _event, 'session:', session?.user?.id);
-
-            // Add a small delay to allow session persistence to settle
-            // This helps prevent flickering or incorrect redirects on initial load/refresh
-            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-
-            if (!isMounted) return; // Check again after delay
 
             setUser(session?.user ?? null);
 
             if (session?.user) {
                 try {
-                    const { data: profile, error: profileError } = await supabase
+                    const { data: profile } = await supabase
                         .from('profiles')
                         .select('onboarded')
                         .eq('id', session.user.id)
-                        .maybeSingle(); // Use maybeSingle as profile might not exist yet
+                        .maybeSingle();
 
-                    if (!isMounted) return;
-
-                    if (profileError) {
-                        console.warn('ProtectedRoute: Profile fetch error on auth state change', profileError);
-                        setIsOnboarded(false); // Assume not onboarded if profile fetch fails
-                    } else {
+                    if (isMounted) {
                         setIsOnboarded(profile?.onboarded ?? false);
                     }
                 } catch (err) {
-                    console.error('ProtectedRoute: Error fetching profile on auth state change', err);
-                    if (isMounted) {
-                        setIsOnboarded(false); // Assume not onboarded on error
-                    }
+                    console.error('ProtectedRoute: Profile fetch error', err);
+                    if (isMounted) setIsOnboarded(false);
                 }
             } else {
                 if (isMounted) {
@@ -76,18 +68,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
                 }
             }
 
-            // Only set loading to false after the initial auth state has been processed
-            if (!initialCheckDone) {
-                if (isMounted) {
-                    setLoading(false);
-                    initialCheckDone = true;
-                    console.log('ProtectedRoute: Initial check finished, loading set to false.');
-                }
-            }
+            if (isMounted) setLoading(false);
+        };
+
+        // Initial check
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            handleAuthAction(session);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            handleAuthAction(session);
         });
 
         return () => {
             isMounted = false;
+            clearTimeout(timeout);
             subscription.unsubscribe();
         };
     }, []);
