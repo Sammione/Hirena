@@ -158,8 +158,36 @@ export const generateNegotiationStrategy = async (offerDetails: string, cvContex
         ]
     });
 
-    return response.choices[0].message.content || 'Failed to generate strategy.';
+    return response.choices[0].message.content || 'Report generation failed.';
 };
+
+export async function parseCVToProfile(cvText: string) {
+    const prompt = `
+    Extract the following professional profile information from the CV text below.
+    Format your response as a valid JSON object.
+    
+    Expected format:
+    {
+      "full_name": "string",
+      "target_role": "string",
+      "email": "string",
+      "phone": "string",
+      "location": "string",
+      "skills": ["string"]
+    }
+
+    CV Text:
+    ${cvText}
+    `;
+
+    const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+    });
+
+    return JSON.parse(response.choices[0].message.content || '{}');
+}
 
 export const getCompanyInsights = async (companyName: string) => {
     const response = await openai.chat.completions.create({

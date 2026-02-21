@@ -45,7 +45,9 @@ export default function Onboarding() {
                 .eq('id', user.id);
 
             if (error) throw error;
-            navigate('/dashboard');
+
+            // Hard reload to refresh all auth states
+            window.location.href = '/dashboard';
         } catch (err) {
             console.error('Onboarding failed:', err);
         } finally {
@@ -53,7 +55,15 @@ export default function Onboarding() {
         }
     };
 
-    const commonSkills = ['React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker', 'UI/UX Design', 'Project Management'];
+    const commonSkills = [
+        'React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker', 'UI/UX Design',
+        'Project Management', 'Java', 'Go', 'SQL', 'PostgreSQL', 'NoSQL', 'MongoDB',
+        'C++', 'C#', 'PHP', 'Laravel', 'Swift', 'Kotlin', 'Flutter', 'React Native',
+        'GraphQL', 'REST API', 'Kubernetes', 'Terraform', 'CI/CD', 'Jenkins',
+        'Data Analysis', 'Machine Learning', 'AI', 'NLP', 'Cloud Computing',
+        'Cybersecurity', 'Agile', 'Scrum', 'Product Management', 'Digital Marketing',
+        'Sales', 'Customer Success', 'Business Development', 'Finance', 'Accounting'
+    ];
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
