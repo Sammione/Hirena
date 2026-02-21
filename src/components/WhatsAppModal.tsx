@@ -1,30 +1,24 @@
 import React, { useState } from 'react';
-import { X, MessageCircle, CheckCircle2, Phone, Loader2 } from 'lucide-react';
+import { X, MessageCircle, CheckCircle2, Phone, Loader2, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { countries, Country } from '../utils/countries';
 
 interface WhatsAppModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-const countries = [
-    { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
-    { code: '+1', flag: '🇺🇸', name: 'USA/Canada' },
-    { code: '+44', flag: '🇬🇧', name: 'UK' },
-    { code: '+233', flag: '🇬🇭', name: 'Ghana' },
-    { code: '+254', flag: '🇰🇪', name: 'Kenya' },
-    { code: '+27', flag: '🇿🇦', name: 'South Africa' },
-    { code: '+91', flag: '🇮🇳', name: 'India' },
-    { code: '+971', flag: '🇦🇪', name: 'UAE' },
-    { code: '+49', flag: '🇩🇪', name: 'Germany' },
-    { code: '+33', flag: '🇫🇷', name: 'France' },
-];
-
 export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [country, setCountry] = useState(countries[0]);
+    const [country, setCountry] = useState(countries.find(c => c.name === 'Nigeria') || countries[0]);
     const [step, setStep] = useState<'input' | 'processing' | 'success'>('input');
     const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredCountries = countries.filter(c =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.code.includes(searchQuery)
+    );
 
     if (!isOpen) return null;
 
@@ -100,24 +94,45 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
                                         </button>
 
                                         {isCountryDropdownOpen && (
-                                            <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-2 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
-                                                {countries.map((c) => (
-                                                    <button
-                                                        key={c.code + c.name}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setCountry(c);
-                                                            setIsCountryDropdownOpen(false);
-                                                        }}
-                                                        className="w-full px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-left transition-all"
-                                                    >
-                                                        <span className="text-lg">{c.flag}</span>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-xs font-black text-slate-900">{c.code}</span>
-                                                            <span className="text-[10px] text-slate-500 font-bold">{c.name}</span>
-                                                        </div>
-                                                    </button>
-                                                ))}
+                                            <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-2 max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                                                <div className="sticky top-0 bg-white px-3 pb-2 pt-1 border-b border-slate-100 mb-1">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            placeholder="Search country..."
+                                                            className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs outline-none focus:border-brand-emerald-500"
+                                                            value={searchQuery}
+                                                            onChange={e => setSearchQuery(e.target.value)}
+                                                            onClick={e => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {filteredCountries.length > 0 ? (
+                                                    filteredCountries.map((c) => (
+                                                        <button
+                                                            key={c.code + c.name}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCountry(c);
+                                                                setSearchQuery('');
+                                                                setIsCountryDropdownOpen(false);
+                                                            }}
+                                                            className="w-full px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-left transition-all"
+                                                        >
+                                                            <span className="text-lg">{c.flag}</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-black text-slate-900">{c.code}</span>
+                                                                <span className="text-[10px] text-slate-500 font-bold">{c.name}</span>
+                                                            </div>
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-4 py-8 text-center text-slate-400 text-xs font-medium">
+                                                        No countries found.
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
