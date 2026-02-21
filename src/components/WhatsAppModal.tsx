@@ -107,14 +107,31 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
                                 <CheckCircle2 className="w-10 h-10" />
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-2xl font-bold text-slate-900">You're Connected!</h3>
-                                <p className="text-slate-500 font-medium">
-                                    We've sent a verification code to <span className="text-slate-900 font-bold underline decoration-brand-emerald-500">{phoneNumber}</span> on WhatsApp.
+                                <h3 className="text-2xl font-bold text-slate-900">One Last Step!</h3>
+                                <p className="text-slate-500 font-medium px-4 text-sm leading-relaxed">
+                                    To start receiving alerts, you need to send a message to our bot. This confirms your number is active.
                                 </p>
                             </div>
-                            <button onClick={onClose} className="w-full bg-slate-100 text-slate-900 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all">
-                                Close
-                            </button>
+
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mx-4">
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Message to send:</p>
+                                <p className="text-sm font-bold text-slate-700">"START HIRENA ALERTS"</p>
+                            </div>
+
+                            <div className="flex flex-col gap-3 px-4">
+                                <a
+                                    href={`https://wa.me/2348120628065?text=START%20HIRENA%20ALERTS`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full bg-brand-emerald-500 text-white py-4 rounded-xl font-bold hover:bg-brand-emerald-600 transition-all shadow-lg shadow-brand-emerald-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <MessageCircle className="w-5 h-5" />
+                                    Open WhatsApp to Confirm
+                                </a>
+                                <button onClick={onClose} className="w-full text-slate-400 py-2 rounded-xl text-sm font-medium hover:text-slate-600 transition-all">
+                                    I'll do it later
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
