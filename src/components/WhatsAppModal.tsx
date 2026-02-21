@@ -152,10 +152,19 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
                                 </p>
                             </div>
 
-                            <button type="submit" className="w-full bg-brand-blue-900 text-white py-4 rounded-xl font-bold hover:bg-brand-blue-800 transition-all shadow-lg shadow-brand-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-2">
-                                <MessageCircle className="w-5 h-5" />
-                                Connect WhatsApp
-                            </button>
+                            <div className="space-y-3">
+                                <button type="submit" className="w-full bg-brand-blue-900 text-white py-4 rounded-xl font-bold hover:bg-brand-blue-800 transition-all shadow-lg shadow-brand-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-2">
+                                    <MessageCircle className="w-5 h-5" />
+                                    Connect WhatsApp
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-all"
+                                >
+                                    Maybe Later
+                                </button>
+                            </div>
                         </form>
                     )}
 
