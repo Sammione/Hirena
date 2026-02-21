@@ -7,9 +7,24 @@ interface WhatsAppModalProps {
     onClose: () => void;
 }
 
+const countries = [
+    { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
+    { code: '+1', flag: '🇺🇸', name: 'USA/Canada' },
+    { code: '+44', flag: '🇬🇧', name: 'UK' },
+    { code: '+233', flag: '🇬🇭', name: 'Ghana' },
+    { code: '+254', flag: '🇰🇪', name: 'Kenya' },
+    { code: '+27', flag: '🇿🇦', name: 'South Africa' },
+    { code: '+91', flag: '🇮🇳', name: 'India' },
+    { code: '+971', flag: '🇦🇪', name: 'UAE' },
+    { code: '+49', flag: '🇩🇪', name: 'Germany' },
+    { code: '+33', flag: '🇫🇷', name: 'France' },
+];
+
 export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [country, setCountry] = useState(countries[0]);
     const [step, setStep] = useState<'input' | 'processing' | 'success'>('input');
+    const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
 
     if (!isOpen) return null;
 
@@ -21,10 +36,12 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Not authenticated');
 
+            const fullNumber = `${country.code}${phoneNumber.replace(/\D/g, '')}`;
+
             const { error } = await supabase
                 .from('profiles')
                 .update({
-                    whatsapp_number: phoneNumber,
+                    whatsapp_number: fullNumber,
                     whatsapp_alerts: true
                 })
                 .eq('id', user.id);
@@ -34,7 +51,7 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
             // Attempt to send a welcome message (Note: may fail due to CORS on direct browser calls)
             try {
                 const { sendWhatsAppMessage } = await import('../lib/twilio');
-                await sendWhatsAppMessage(phoneNumber, "Welcome to Hirena Job Alerts! You are now connected.");
+                await sendWhatsAppMessage(fullNumber, "Welcome to Hirena Job Alerts! You are now connected.");
             } catch (twilioErr) {
                 console.warn('Auto-welcome message failed (likely CORS). User should still use the manual button.', twilioErr);
             }
@@ -64,9 +81,6 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
                         <h2 className="text-2xl font-bold text-white mb-2">Hirena Job Bot</h2>
                         <p className="text-brand-emerald-100 font-medium">Get instant job alerts on WhatsApp.</p>
                     </div>
-                    {/* Decor */}
-                    <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
-                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-brand-blue-900/20 rounded-full blur-2xl translate-x-1/2 translate-y-1/2"></div>
                 </div>
 
                 <div className="p-8">
@@ -74,15 +88,44 @@ export function WhatsAppModal({ isOpen, onClose }: WhatsAppModalProps) {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-700 block">WhatsApp Number</label>
-                                <div className="relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 border-r border-slate-200 pr-3">
-                                        <span className="text-xl">🇳🇬</span>
-                                        <span className="text-slate-500 font-bold text-sm">+234</span>
+                                <div className="relative flex gap-2">
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                                            className="h-[54px] px-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 hover:bg-slate-100 transition-all font-bold text-sm"
+                                        >
+                                            <span>{country.flag}</span>
+                                            <span>{country.code}</span>
+                                        </button>
+
+                                        {isCountryDropdownOpen && (
+                                            <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-2 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                                                {countries.map((c) => (
+                                                    <button
+                                                        key={c.code + c.name}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setCountry(c);
+                                                            setIsCountryDropdownOpen(false);
+                                                        }}
+                                                        className="w-full px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-left transition-all"
+                                                    >
+                                                        <span className="text-lg">{c.flag}</span>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-black text-slate-900">{c.code}</span>
+                                                            <span className="text-[10px] text-slate-500 font-bold">{c.name}</span>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
+
                                     <input
                                         type="tel"
                                         placeholder="812 345 6789"
-                                        className="w-full pl-28 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-brand-emerald-500 focus:outline-none transition-all placeholder:text-slate-400"
+                                        className="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-brand-emerald-500 focus:outline-none transition-all placeholder:text-slate-400"
                                         value={phoneNumber}
                                         onChange={(e) => setPhoneNumber(e.target.value)}
                                         required
