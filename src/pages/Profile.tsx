@@ -127,32 +127,51 @@ export default function Profile() {
 
             console.log('AI Parsed Data:', data);
 
-            // Immediately save to database
-            const { error } = await supabase
+            // Resilient Saving Strategy: Try full save, fallback to core save if columns missing
+            const fullUpdateData = {
+                full_name: data.full_name || editData.full_name,
+                target_role: data.target_role || editData.target_role,
+                email: data.email || editData.email,
+                phone: data.phone || editData.phone,
+                location: data.location || editData.location,
+                bio: data.bio || editData.bio,
+                experience: data.experience || editData.experience,
+                skills: Array.from(new Set([...editData.skills, ...(data.skills || [])])),
+                onboarded: true
+            };
+
+            const { error: fullError } = await supabase
                 .from('profiles')
-                .update({
-                    full_name: data.full_name || editData.full_name,
-                    target_role: data.target_role || editData.target_role,
-                    email: data.email || editData.email,
-                    phone: data.phone || editData.phone,
-                    location: data.location || editData.location,
-                    bio: data.bio || editData.bio,
-                    experience: data.experience || editData.experience,
-                    skills: Array.from(new Set([...editData.skills, ...(data.skills || [])])),
-                    onboarded: true
-                })
+                .update(fullUpdateData)
                 .eq('id', user.id);
 
-            if (error) {
-                console.error('Supabase Update Error:', error);
-                throw new Error(`Database Error: ${error.message}. Ensure you have run the column update SQL in your Supabase dashboard.`);
+            if (fullError) {
+                console.warn('Full profile update failed, attempting core field fall-back:', fullError.message);
+
+                // If it's a column error, try saving only what we know exists
+                if (fullError.message.includes('column')) {
+                    const { error: coreError } = await supabase
+                        .from('profiles')
+                        .update({
+                            full_name: fullUpdateData.full_name,
+                            target_role: fullUpdateData.target_role,
+                            skills: fullUpdateData.skills,
+                            onboarded: true
+                        })
+                        .eq('id', user.id);
+
+                    if (coreError) throw coreError;
+                    alert('Note: Profile partially updated. Some fields (Bio/Experience) couldn\'t be saved because database columns are missing. Please run the SQL fix.');
+                } else {
+                    throw fullError;
+                }
             }
 
             // Refresh UI
             await fetchProfile();
-            alert('Success! Your profile has been updated from your CV.');
+            if (!fullError) alert('Success! Your profile has been updated from your CV.');
         } catch (err: any) {
-            console.error('Combined Error Profile page:', err);
+            console.error('Final Error Profile page:', err);
             alert(err.message || 'An unexpected error occurred while processing your CV.');
         } finally {
             setIsParsing(false);
