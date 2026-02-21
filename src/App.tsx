@@ -28,83 +28,96 @@ const PageLoader = () => (
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any>(null);
-    const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null); // null means not yet determined
+    const [loading, setLoading] = useState(true); // Start loading
 
     useEffect(() => {
-        const checkAuthAndProfile = async () => {
-            console.log('ProtectedRoute: Starting check...');
-            try {
-                // Add a timeout to getSession to prevent infinite hang
-                const sessionPromise = supabase.auth.getSession();
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000));
+        let isMounted = true;
+        let initialCheckDone = false; // Flag to ensure loading is set to false only after the first event
 
-                const { data: { session }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
+            if (!isMounted) return;
 
-                if (sessionError) throw sessionError;
+            console.log('onAuthStateChange event:', _event, 'session:', session?.user?.id);
 
-                if (session?.user) {
-                    console.log('ProtectedRoute: User found', session.user.id);
-                    setUser(session.user);
+            // Add a small delay to allow session persistence to settle
+            // This helps prevent flickering or incorrect redirects on initial load/refresh
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
 
+            if (!isMounted) return; // Check again after delay
+
+            setUser(session?.user ?? null);
+
+            if (session?.user) {
+                try {
                     const { data: profile, error: profileError } = await supabase
                         .from('profiles')
                         .select('onboarded')
                         .eq('id', session.user.id)
-                        .maybeSingle(); // Better than single()
+                        .maybeSingle(); // Use maybeSingle as profile might not exist yet
+
+                    if (!isMounted) return;
 
                     if (profileError) {
-                        console.warn('ProtectedRoute: Profile fetch error', profileError);
-                        setIsOnboarded(false);
+                        console.warn('ProtectedRoute: Profile fetch error on auth state change', profileError);
+                        setIsOnboarded(false); // Assume not onboarded if profile fetch fails
                     } else {
-                        console.log('ProtectedRoute: Profile found', profile);
                         setIsOnboarded(profile?.onboarded ?? false);
                     }
-                } else {
-                    console.log('ProtectedRoute: No user session');
-                    setUser(null);
-                    setIsOnboarded(null);
-                }
-            } catch (err) {
-                console.error('ProtectedRoute: Error in auth check', err);
-                setUser(null);
-                setIsOnboarded(null);
-            } finally {
-                console.log('ProtectedRoute: Check finished');
-                setLoading(false);
-            }
-        };
-
-        checkAuthAndProfile();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                try {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('onboarded')
-                        .eq('id', session.user.id)
-                        .single();
-                    setIsOnboarded(profile?.onboarded ?? false);
                 } catch (err) {
-                    setIsOnboarded(false);
+                    console.error('ProtectedRoute: Error fetching profile on auth state change', err);
+                    if (isMounted) {
+                        setIsOnboarded(false); // Assume not onboarded on error
+                    }
                 }
             } else {
-                setIsOnboarded(null);
+                if (isMounted) {
+                    setIsOnboarded(null); // Reset onboarded state if no user
+                }
+            }
+
+            // Only set loading to false after the initial auth state has been processed
+            if (!initialCheckDone) {
+                if (isMounted) {
+                    setLoading(false);
+                    initialCheckDone = true;
+                    console.log('ProtectedRoute: Initial check finished, loading set to false.');
+                }
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            isMounted = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
-    if (loading) return <PageLoader />;
-    if (!user) return <Navigate to="/login" replace />;
+    if (loading) {
+        return <PageLoader />;
+    }
 
+    // If not loading, and no user, redirect to login
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // If user exists, handle onboarding redirects
     const isAtOnboarding = window.location.pathname === '/onboarding';
-    if (!isOnboarded && !isAtOnboarding) return <Navigate to="/onboarding" replace />;
-    if (isOnboarded && isAtOnboarding) return <Navigate to="/dashboard" replace />;
 
+    if (isOnboarded === false && !isAtOnboarding) {
+        // User is logged in but not onboarded, and not on the onboarding page
+        return <Navigate to="/onboarding" replace />;
+    }
+
+    if (isOnboarded === true && isAtOnboarding) {
+        // User is logged in and onboarded, but on the onboarding page
+        return <Navigate to="/dashboard" replace />;
+    }
+
+    // If user is logged in, onboarded state is consistent with current path,
+    // or isOnboarded is null (meaning profile check might still be pending or failed,
+    // but we have a user and are not forcing a redirect based on onboarding status yet),
+    // render children.
     return <>{children}</>;
 };
 

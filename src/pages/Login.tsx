@@ -24,8 +24,8 @@ export default function Login() {
 
             if (signInError) throw signInError;
 
-            console.log('Login successful, navigating...');
-            navigate('/dashboard');
+            console.log('Login successful, redirecting...');
+            window.location.href = '/dashboard';
         } catch (err: any) {
             console.error('Login error:', err);
             setError(err.message || 'Error signing in');
