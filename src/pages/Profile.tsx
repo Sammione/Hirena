@@ -98,11 +98,32 @@ export default function Profile() {
         setIsParsing(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!user) {
+                alert('You must be logged in to upload a CV.');
+                return;
+            }
 
-            console.log('Starting CV upload and parse...');
-            const text = await extractTextFromFile(file);
-            const data = await parseCVToProfile(text);
+            console.log('Starting CV processing for file:', file.name);
+
+            let text = '';
+            try {
+                text = await extractTextFromFile(file);
+            } catch (err: any) {
+                console.error('Text Extraction Error:', err);
+                throw new Error(`Failed to read the file: ${err.message}`);
+            }
+
+            if (!text.trim()) {
+                throw new Error('The file appears to be empty or unreadable.');
+            }
+
+            let data: any = {};
+            try {
+                data = await parseCVToProfile(text);
+            } catch (err: any) {
+                console.error('AI Parsing Error:', err);
+                throw new Error(`AI was unable to parse your CV: ${err.message}. Please check your OpenAI API key.`);
+            }
 
             console.log('AI Parsed Data:', data);
 
@@ -124,18 +145,18 @@ export default function Profile() {
 
             if (error) {
                 console.error('Supabase Update Error:', error);
-                alert(`Error updating profile: ${error.message}. You might need to add missing columns to your Supabase table.`);
-                throw error;
+                throw new Error(`Database Error: ${error.message}. Ensure you have run the column update SQL in your Supabase dashboard.`);
             }
 
             // Refresh UI
             await fetchProfile();
-            console.log('Profile auto-updated successfully');
+            alert('Success! Your profile has been updated from your CV.');
         } catch (err: any) {
-            console.error('Error parsing/saving CV profile:', err);
-            alert('Failed to parse CV. Check console for details.');
+            console.error('Combined Error Profile page:', err);
+            alert(err.message || 'An unexpected error occurred while processing your CV.');
         } finally {
             setIsParsing(false);
+            if (e.target) e.target.value = '';
         }
     };
 
@@ -293,6 +314,27 @@ export default function Profile() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
+                    {/* Bio Section */}
+                    {(profile?.bio || isEditing) && (
+                        <div className="card p-6">
+                            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <User className="w-5 h-5 text-brand-emerald-500" /> Professional Summary
+                            </h2>
+                            {isEditing ? (
+                                <textarea
+                                    className="w-full h-32 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-emerald-500/20"
+                                    placeholder="Write a brief professional bio..."
+                                    value={editData.bio}
+                                    onChange={e => setEditData({ ...editData, bio: e.target.value })}
+                                />
+                            ) : (
+                                <p className="text-slate-600 leading-relaxed text-sm">
+                                    {profile?.bio}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
                     <div className="card p-6">
                         <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center justify-between">
                             <div className="flex items-center gap-2">
