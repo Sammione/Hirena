@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles } from 'lucide-react';
+import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles, Ghost } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { matchSkillsToJob } from '../lib/openai';
 import { searchJobs, Job } from '../lib/jobs';
@@ -18,6 +18,7 @@ export default function JobDiscovery() {
     const [matchingJobId, setMatchingJobId] = useState<string | null>(null);
     const [matchResults, setMatchResults] = useState<Record<string, any>>({});
     const [userCV, setUserCV] = useState<string>('');
+    const [whatsappEnabled, setWhatsappEnabled] = useState(false);
     const lastSearchRef = useRef<string>('');
 
     useEffect(() => {
@@ -48,15 +49,29 @@ export default function JobDiscovery() {
 
         const { data } = await supabase
             .from('profiles')
-            .select('target_role')
+            .select('target_role, whatsapp_alerts')
             .eq('id', user.id)
             .single();
 
+        if (data?.whatsapp_alerts !== undefined) {
+            setWhatsappEnabled(data.whatsapp_alerts);
+        }
         if (data?.target_role) {
             setSearchQuery(data.target_role);
             return data.target_role;
         }
         return null;
+    };
+
+    const toggleGhostHunter = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const newVal = !whatsappEnabled;
+        setWhatsappEnabled(newVal);
+        await supabase
+            .from('profiles')
+            .update({ whatsapp_alerts: newVal })
+            .eq('id', user.id);
     };
 
     const loadUserCV = async () => {
@@ -366,20 +381,47 @@ export default function JobDiscovery() {
                 </div>
 
                 <div className="space-y-6">
-                    <div className="card p-6 bg-brand-blue-900 text-white relative overflow-hidden shadow-2xl shadow-brand-blue-900/20">
+                    <div className={cn(
+                        "card p-6 relative overflow-hidden shadow-2xl transition-all duration-500",
+                        whatsappEnabled
+                            ? "bg-brand-blue-900 text-white shadow-brand-blue-900/30"
+                            : "bg-white border-2 border-dashed border-slate-200"
+                    )}>
                         <div className="relative z-10">
-                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6">
-                                <Star className="w-6 h-6 text-brand-emerald-400" />
+                            <div className={cn(
+                                "w-12 h-12 rounded-xl flex items-center justify-center mb-5",
+                                whatsappEnabled ? "bg-white/10" : "bg-slate-100"
+                            )}>
+                                <Ghost className={cn("w-6 h-6", whatsappEnabled ? "text-brand-emerald-400" : "text-slate-400")} />
                             </div>
-                            <h3 className="text-xl font-bold mb-2">AI Insights</h3>
-                            <p className="text-brand-blue-200 text-sm font-medium leading-relaxed mb-6">
-                                Based on your current skill set, we estimate a 25% increase in match probability if you learn <b>Amazon S3</b>.
+                            <h3 className={cn("text-xl font-bold mb-2", !whatsappEnabled && "text-slate-900")}>
+                                👻 Ghost Hunter
+                            </h3>
+                            <p className={cn(
+                                "text-sm font-medium leading-relaxed mb-5",
+                                whatsappEnabled ? "text-brand-blue-200" : "text-slate-500"
+                            )}>
+                                {whatsappEnabled
+                                    ? "Active! Your AI agent is hunting for high-match jobs 24/7 and will WhatsApp you instantly when it finds one."
+                                    : "Activate your AI agent. It hunts for 90%+ match jobs around the clock and sends you a WhatsApp alert — even while you sleep."
+                                }
                             </p>
-                            <button className="w-full py-3 bg-brand-emerald-500 hover:bg-brand-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]">
-                                Improve Match Score
+                            <button
+                                onClick={toggleGhostHunter}
+                                className={cn(
+                                    "w-full py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95",
+                                    whatsappEnabled
+                                        ? "bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30"
+                                        : "bg-brand-blue-900 hover:bg-brand-blue-800 text-white shadow-brand-blue-900/20"
+                                )}
+                            >
+                                <Ghost className="w-4 h-4" />
+                                {whatsappEnabled ? "Deactivate Hunter" : "Activate Ghost Hunter"}
                             </button>
                         </div>
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                        {whatsappEnabled && (
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                        )}
                     </div>
 
                     <div className="card p-6 border-slate-200">
