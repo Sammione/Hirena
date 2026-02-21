@@ -19,6 +19,8 @@ export default function Profile() {
         email: '',
         phone: '',
         location: '',
+        bio: '',
+        experience: [] as any[],
         skills: [] as string[]
     });
 
@@ -46,6 +48,8 @@ export default function Profile() {
                     email: data.email || user.email || '',
                     phone: data.phone || '',
                     location: data.location || '',
+                    bio: data.bio || '',
+                    experience: data.experience || [],
                     skills: data.skills || []
                 });
             }
@@ -70,6 +74,8 @@ export default function Profile() {
                     email: editData.email,
                     phone: editData.phone,
                     location: editData.location,
+                    bio: editData.bio,
+                    experience: editData.experience,
                     skills: editData.skills,
                     onboarded: true
                 })
@@ -94,10 +100,13 @@ export default function Profile() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
+            console.log('Starting CV upload and parse...');
             const text = await extractTextFromFile(file);
             const data = await parseCVToProfile(text);
 
-            // Immediately save to database for "it just works" experience
+            console.log('AI Parsed Data:', data);
+
+            // Immediately save to database
             const { error } = await supabase
                 .from('profiles')
                 .update({
@@ -106,18 +115,25 @@ export default function Profile() {
                     email: data.email || editData.email,
                     phone: data.phone || editData.phone,
                     location: data.location || editData.location,
+                    bio: data.bio || editData.bio,
+                    experience: data.experience || editData.experience,
                     skills: Array.from(new Set([...editData.skills, ...(data.skills || [])])),
                     onboarded: true
                 })
                 .eq('id', user.id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase Update Error:', error);
+                alert(`Error updating profile: ${error.message}. You might need to add missing columns to your Supabase table.`);
+                throw error;
+            }
 
             // Refresh UI
             await fetchProfile();
-            console.log('Profile auto-updated from CV');
-        } catch (err) {
+            console.log('Profile auto-updated successfully');
+        } catch (err: any) {
             console.error('Error parsing/saving CV profile:', err);
+            alert('Failed to parse CV. Check console for details.');
         } finally {
             setIsParsing(false);
         }
@@ -287,19 +303,26 @@ export default function Profile() {
                             )}
                         </h2>
                         <div className="space-y-8">
-                            <div className="flex gap-4 relative">
-                                <div className="w-10 h-10 rounded-lg border border-slate-100 flex-shrink-0 flex items-center justify-center p-2 bg-white z-10 text-slate-300">
-                                    <Briefcase className="w-5 h-5" />
+                            {profile?.experience?.length > 0 ? (
+                                profile.experience.map((exp: any, i: number) => (
+                                    <div key={i} className="flex gap-4 relative last:after:hidden after:absolute after:left-5 after:top-10 after:bottom-0 after:w-px after:bg-slate-100">
+                                        <div className="w-10 h-10 rounded-lg border border-slate-100 flex-shrink-0 flex items-center justify-center p-2 bg-white z-10 text-brand-blue-900">
+                                            <Briefcase className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900">{exp.title}</h3>
+                                            <p className="text-sm font-medium text-slate-600">{exp.company}</p>
+                                            <p className="text-xs text-slate-400 mt-1">{exp.duration}</p>
+                                            <p className="text-sm text-slate-500 mt-3 leading-relaxed">{exp.description}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                    <Briefcase className="w-12 h-12 mb-4 opacity-20" />
+                                    <p className="text-sm font-medium">No experience listed. Import your CV to populate this!</p>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900">{profile?.target_role || 'Add your experience...'}</h3>
-                                    <p className="text-sm font-medium text-slate-600">Company Name • Full-time</p>
-                                    <p className="text-xs text-slate-400 mt-1">Start Date - End Date</p>
-                                    <p className="text-sm text-slate-500 mt-3 leading-relaxed">
-                                        Use the edit button to add your professional accomplishments here.
-                                    </p>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -173,6 +173,15 @@ export async function parseCVToProfile(cvText: string) {
       "email": "string",
       "phone": "string",
       "location": "string",
+      "bio": "string (a professional summary)",
+      "experience": [
+        {
+          "title": "string",
+          "company": "string",
+          "duration": "string",
+          "description": "string"
+        }
+      ],
       "skills": ["string"]
     }
 
