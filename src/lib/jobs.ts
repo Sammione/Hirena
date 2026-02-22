@@ -13,13 +13,16 @@ export interface Job {
     url: string;
 }
 
-export const searchJobs = async (query: string, page: number = 1): Promise<Job[]> => {
+export const searchJobs = async (query: string, page: number = 1, location?: string): Promise<Job[]> => {
     if (!RAPID_API_KEY || RAPID_API_KEY === 'your_rapidapi_key_here') {
         console.warn('RapidAPI key is missing. Returning empty results.');
         return [];
     }
 
-    const response = await fetch(`https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=${page}&num_pages=1`, {
+    // Append location to query if provided — JSearch supports natural language like "React in Lagos"
+    const fullQuery = location ? `${query} in ${location}` : query;
+
+    const response = await fetch(`https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(fullQuery)}&page=${page}&num_pages=1`, {
         method: 'GET',
         headers: {
             'X-RapidAPI-Key': RAPID_API_KEY,

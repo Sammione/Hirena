@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles, Ghost } from 'lucide-react';
+import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles, Ghost, Navigation } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { matchSkillsToJob } from '../lib/openai';
 import { searchJobs, Job } from '../lib/jobs';
@@ -19,6 +19,7 @@ export default function JobDiscovery() {
     const [matchResults, setMatchResults] = useState<Record<string, any>>({});
     const [userCV, setUserCV] = useState<string>('');
     const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+    const [locationQuery, setLocationQuery] = useState('');
     const lastSearchRef = useRef<string>('');
 
     useEffect(() => {
@@ -28,16 +29,18 @@ export default function JobDiscovery() {
             // Check session cache first
             const cachedJobs = sessionStorage.getItem('hirena_last_jobs');
             const cachedQuery = sessionStorage.getItem('hirena_last_query');
+            const cachedLocation = sessionStorage.getItem('hirena_last_location');
             const cachedPage = sessionStorage.getItem('hirena_last_page');
 
             if (cachedJobs && cachedQuery) {
                 setJobs(JSON.parse(cachedJobs));
                 setSearchQuery(cachedQuery);
+                if (cachedLocation) setLocationQuery(cachedLocation);
                 setCurrentPage(Number(cachedPage || 1));
                 lastSearchRef.current = cachedQuery;
             } else {
-                const role = await loadUserProfile();
-                handleSearch(role || 'React Developer');
+                const { role, location } = await loadUserProfile();
+                handleSearch(role || 'React Developer', false, location || '');
             }
         };
         init();
@@ -45,22 +48,25 @@ export default function JobDiscovery() {
 
     const loadUserProfile = async () => {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+        if (!user) return { role: null, location: null };
 
         const { data } = await supabase
             .from('profiles')
-            .select('target_role, whatsapp_alerts')
+            .select('target_role, whatsapp_alerts, location')
             .eq('id', user.id)
             .single();
 
         if (data?.whatsapp_alerts !== undefined) {
             setWhatsappEnabled(data.whatsapp_alerts);
         }
+        if (data?.location) {
+            setLocationQuery(data.location);
+        }
         if (data?.target_role) {
             setSearchQuery(data.target_role);
-            return data.target_role;
+            return { role: data.target_role, location: data.location || '' };
         }
-        return null;
+        return { role: null, location: data?.location || '' };
     };
 
     const toggleGhostHunter = async () => {
@@ -91,8 +97,9 @@ export default function JobDiscovery() {
         }
     };
 
-    const handleSearch = async (queryOverride?: string, isLoadMore = false) => {
+    const handleSearch = async (queryOverride?: string, isLoadMore = false, locationOverride?: string) => {
         const query = queryOverride || searchQuery;
+        const location = locationOverride !== undefined ? locationOverride : locationQuery;
         if (!query) return;
 
         // If it's a new search, reset everything
@@ -106,7 +113,7 @@ export default function JobDiscovery() {
 
         try {
             const pageToFetch = isLoadMore ? currentPage + 1 : 1;
-            const results = await searchJobs(query, pageToFetch);
+            const results = await searchJobs(query, pageToFetch, location);
 
             const updatedJobs = isLoadMore ? [...jobs, ...results] : results;
             setJobs(updatedJobs);
@@ -118,6 +125,7 @@ export default function JobDiscovery() {
             // Save to session cache
             sessionStorage.setItem('hirena_last_jobs', JSON.stringify(updatedJobs));
             sessionStorage.setItem('hirena_last_query', query);
+            sessionStorage.setItem('hirena_last_location', location);
             sessionStorage.setItem('hirena_last_page', (isLoadMore ? pageToFetch : 1).toString());
         } catch (error) {
             console.error('Search failed:', error);
@@ -175,20 +183,44 @@ export default function JobDiscovery() {
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Job Discovery</h1>
-                    <div className="flex items-center gap-2 mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus-within:ring-2 focus-within:ring-brand-emerald-500/20 transition-all">
-                        <Search className="w-4 h-4 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search roles (e.g. React Developer)..."
-                            className="bg-transparent outline-none text-sm font-medium text-slate-700 w-64"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        />
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2">
+                        {/* Role Search */}
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus-within:ring-2 focus-within:ring-brand-emerald-500/20 transition-all">
+                            <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="Role (e.g. React Developer)..."
+                                className="bg-transparent outline-none text-sm font-medium text-slate-700 w-52"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                        </div>
+                        {/* Location Search */}
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus-within:ring-2 focus-within:ring-brand-emerald-500/20 transition-all">
+                            <Navigation className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="Location (e.g. Lagos, Remote)..."
+                                className="bg-transparent outline-none text-sm font-medium text-slate-700 w-52"
+                                value={locationQuery}
+                                onChange={(e) => setLocationQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                            {locationQuery && (
+                                <button
+                                    onClick={() => { setLocationQuery(''); handleSearch(undefined, false, ''); }}
+                                    className="text-slate-400 hover:text-slate-600 transition-colors text-xs font-bold"
+                                    title="Clear location"
+                                >✕</button>
+                            )}
+                        </div>
+                        {/* Search Button */}
                         <button
                             onClick={() => handleSearch()}
-                            className="text-xs font-bold text-brand-emerald-600 hover:text-brand-emerald-700 ml-2"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-brand-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-brand-emerald-600 transition-all shadow-lg shadow-brand-emerald-500/20 active:scale-95"
                         >
+                            <Search className="w-4 h-4" />
                             Search
                         </button>
                     </div>
