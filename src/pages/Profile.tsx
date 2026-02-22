@@ -196,8 +196,8 @@ export default function Profile() {
                 </div>
                 <div className="px-8 pb-8 relative">
                     <div className="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-6">
-                        <div className="w-32 h-32 rounded-3xl border-4 border-white bg-slate-100 overflow-hidden shadow-xl z-20">
-                            <img src={`https://i.pravatar.cc/150?u=${profile?.id}`} alt="profile" className="w-full h-full object-cover" />
+                        <div className="w-32 h-32 rounded-3xl border-4 border-white bg-slate-100 flex items-center justify-center shadow-xl z-20">
+                            <User className="w-16 h-16 text-slate-300" />
                         </div>
                         <div className="flex-1 pb-2 z-20">
                             {isEditing ? (
