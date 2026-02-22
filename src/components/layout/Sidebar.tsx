@@ -13,14 +13,15 @@ import {
     X,
     ArrowRight,
     DollarSign,
-    Building2
+    Building2,
+    History
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Briefcase, label: 'Job Discovery', path: '/jobs' },
-    { icon: Map, label: 'Career Pathway', path: '/pathway' },
+    { icon: History, label: 'Career Time Machine', path: '/pathway' },
     { icon: FileText, label: 'CV Management', path: '/cv' },
     { icon: DollarSign, label: 'Salary Negotiator', path: '/negotiator' },
     { icon: Building2, label: 'Company Deep-Dive', path: '/company-insights' },
