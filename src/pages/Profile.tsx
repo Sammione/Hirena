@@ -34,7 +34,7 @@ export default function Profile() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', user.id)
@@ -52,6 +52,16 @@ export default function Profile() {
                     experience: data.experience || [],
                     skills: data.skills || []
                 });
+            } else {
+                // If no profile exists, create a blank one automatically
+                const newProfile = {
+                    id: user.id,
+                    email: user.email,
+                    full_name: user.user_metadata?.full_name || '',
+                    onboarded: false
+                };
+                await supabase.from('profiles').upsert(newProfile);
+                setProfile(newProfile);
             }
         } catch (err) {
             console.error('Error fetching profile:', err);
@@ -68,7 +78,8 @@ export default function Profile() {
 
             const { error } = await supabase
                 .from('profiles')
-                .update({
+                .upsert({
+                    id: user.id,
                     full_name: editData.full_name,
                     target_role: editData.target_role,
                     email: editData.email,
@@ -77,9 +88,9 @@ export default function Profile() {
                     bio: editData.bio,
                     experience: editData.experience,
                     skills: editData.skills,
-                    onboarded: true
-                })
-                .eq('id', user.id);
+                    onboarded: true,
+                    updated_at: new Date().toISOString()
+                });
 
             if (error) throw error;
             setIsEditing(false);
@@ -103,32 +114,11 @@ export default function Profile() {
                 return;
             }
 
-            console.log('Starting CV processing for file:', file.name);
+            const text = await extractTextFromFile(file);
+            const data = await parseCVToProfile(text);
 
-            let text = '';
-            try {
-                text = await extractTextFromFile(file);
-            } catch (err: any) {
-                console.error('Text Extraction Error:', err);
-                throw new Error(`Failed to read the file: ${err.message}`);
-            }
-
-            if (!text.trim()) {
-                throw new Error('The file appears to be empty or unreadable.');
-            }
-
-            let data: any = {};
-            try {
-                data = await parseCVToProfile(text);
-            } catch (err: any) {
-                console.error('AI Parsing Error:', err);
-                throw new Error(`AI was unable to parse your CV: ${err.message}. Please check your OpenAI API key.`);
-            }
-
-            console.log('AI Parsed Data:', data);
-
-            // Resilient Saving Strategy: Try full save, fallback to core save if columns missing
-            const fullUpdateData = {
+            const upsertData = {
+                id: user.id,
                 full_name: data.full_name || editData.full_name,
                 target_role: data.target_role || editData.target_role,
                 email: data.email || editData.email,
@@ -137,39 +127,18 @@ export default function Profile() {
                 bio: data.bio || editData.bio,
                 experience: data.experience || editData.experience,
                 skills: Array.from(new Set([...editData.skills, ...(data.skills || [])])),
-                onboarded: true
+                onboarded: true,
+                updated_at: new Date().toISOString()
             };
 
-            const { error: fullError } = await supabase
+            const { error: upsertError } = await supabase
                 .from('profiles')
-                .update(fullUpdateData)
-                .eq('id', user.id);
+                .upsert(upsertData);
 
-            if (fullError) {
-                console.warn('Full profile update failed, attempting core field fall-back:', fullError.message);
+            if (upsertError) throw upsertError;
 
-                // If it's a column error, try saving only what we know exists
-                if (fullError.message.includes('column')) {
-                    const { error: coreError } = await supabase
-                        .from('profiles')
-                        .update({
-                            full_name: fullUpdateData.full_name,
-                            target_role: fullUpdateData.target_role,
-                            skills: fullUpdateData.skills,
-                            onboarded: true
-                        })
-                        .eq('id', user.id);
-
-                    if (coreError) throw coreError;
-                    alert('Note: Profile partially updated. Some fields (Bio/Experience) couldn\'t be saved because database columns are missing. Please run the SQL fix.');
-                } else {
-                    throw fullError;
-                }
-            }
-
-            // Refresh UI
             await fetchProfile();
-            if (!fullError) alert('Success! Your profile has been updated from your CV.');
+            alert('Success! Your profile has been updated from your CV.');
         } catch (err: any) {
             console.error('Final Error Profile page:', err);
             alert(err.message || 'An unexpected error occurred while processing your CV.');
