@@ -48,6 +48,7 @@ ALTER TABLE career_roadmaps ENABLE ROW LEVEL SECURITY;
 -- Policies
 CREATE POLICY "Users can view their own profile." ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own profile." ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own profile." ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can view their own CV analyses." ON cv_analyses FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own CV analyses." ON cv_analyses FOR INSERT WITH CHECK (auth.uid() = user_id);

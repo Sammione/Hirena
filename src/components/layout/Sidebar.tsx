@@ -14,13 +14,15 @@ import {
     ArrowRight,
     DollarSign,
     Building2,
-    History
+    History,
+    Ghost
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Briefcase, label: 'Job Discovery', path: '/jobs' },
+    { icon: Ghost, label: 'Ghost Hunter', path: '/ghost-hunter' },
     { icon: History, label: 'Career Time Machine', path: '/pathway' },
     { icon: FileText, label: 'CV Management', path: '/cv' },
     { icon: DollarSign, label: 'Salary Negotiator', path: '/negotiator' },
