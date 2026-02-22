@@ -216,6 +216,88 @@ export async function parseCVToProfile(cvText: string) {
     return JSON.parse(response.choices[0].message.content || '{}');
 }
 
+export type CareerTimelineNode = {
+    period: string;           // e.g. "6 Months", "1 Year"
+    title: string;            // predicted job title
+    salary_min: number;       // in USD/year
+    salary_max: number;
+    salary_currency: string;  // e.g. "USD", "NGN"
+    key_skill: string;        // the ONE skill that unlocks this level
+    probability: number;      // 0-100 % likelihood if they follow the plan
+};
+
+export type CareerRiskAlert = {
+    skill: string;
+    risk: string;             // e.g. "demand dropping 23% by 2026"
+    urgency: 'low' | 'medium' | 'high';
+};
+
+export type CareerOpportunity = {
+    skill: string;
+    reason: string;           // e.g. "#1 demanded skill in your industry right now"
+    timeToLearn: string;      // e.g. "3 weeks"
+};
+
+export type CareerTimeline = {
+    currentTitle: string;
+    currentSalaryMin: number;
+    currentSalaryMax: number;
+    currency: string;
+    summary: string;
+    timeline: CareerTimelineNode[];
+    riskAlerts: CareerRiskAlert[];
+    opportunities: CareerOpportunity[];
+    doNothingOutcome: string; // what happens if they don't act
+};
+
+export const generateCareerTimeline = async (
+    currentRole: string,
+    skills: string[],
+    cvText?: string
+): Promise<CareerTimeline> => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `You are an elite career intelligence AI with access to global job market data. 
+                Your job is to predict a user's career future based on their current role and skills.
+                Be brutally honest, data-driven, and specific. Use realistic salary ranges.
+                Detect if the user is likely in Africa/Nigeria and use NGN salaries (multiply USD by 1600), otherwise use USD.
+                
+                Return a JSON object with this EXACT structure:
+                {
+                  "currentTitle": "their current role title",
+                  "currentSalaryMin": number,
+                  "currentSalaryMax": number,
+                  "currency": "NGN or USD",
+                  "summary": "2-sentence punchy summary of their career trajectory",
+                  "timeline": [
+                    { "period": "6 Months", "title": "predicted title", "salary_min": number, "salary_max": number, "salary_currency": "NGN", "key_skill": "the one skill to learn", "probability": 85 },
+                    { "period": "1 Year", ... },
+                    { "period": "3 Years", ... },
+                    { "period": "5 Years", ... }
+                  ],
+                  "riskAlerts": [
+                    { "skill": "skill name", "risk": "specific risk description", "urgency": "high" }
+                  ],
+                  "opportunities": [
+                    { "skill": "skill name", "reason": "why it's hot right now", "timeToLearn": "2 weeks" }
+                  ],
+                  "doNothingOutcome": "Brutally honest 1-sentence prediction if they take no action"
+                }`
+            },
+            {
+                role: 'user',
+                content: `Current Role: ${currentRole}\nSkills: ${skills.join(', ')}${cvText ? `\n\nCV Summary: ${cvText.slice(0, 800)}` : ''}`
+            }
+        ],
+        response_format: { type: 'json_object' }
+    });
+
+    return JSON.parse(response.choices[0].message.content || '{}') as CareerTimeline;
+};
+
 export const getCompanyInsights = async (companyName: string) => {
     const response = await openai.chat.completions.create({
         model: 'gpt-4o',
