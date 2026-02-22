@@ -125,6 +125,47 @@ export default function CVManagement() {
         pdf.save('Hirena-CV-Analysis.pdf');
     };
 
+    const handleSelectCV = (cv: any) => {
+        setAnalysisResult({
+            score: cv.score,
+            readinessScore: cv.readiness_score,
+            sections: cv.sections,
+            strengths: cv.strengths,
+            improvements: cv.improvements,
+            skillGaps: cv.skill_gaps
+        });
+        // Scroll to analysis if on mobile
+        if (window.innerWidth < 1024) {
+            analysisRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    const handleDownloadCV = (cv: any) => {
+        const doc = new jsPDF();
+        doc.setFontSize(22);
+        doc.text('Hirena CV Intelligence Report', 20, 20);
+        doc.setFontSize(12);
+        doc.text(`Date: ${new Date(cv.created_at).toLocaleDateString()}`, 20, 30);
+        doc.text(`ATS Score: ${cv.score}%`, 20, 40);
+        doc.text(`Readiness Score: ${cv.readiness_score}%`, 20, 50);
+
+        doc.setFontSize(16);
+        doc.text('Top Improvements:', 20, 70);
+        doc.setFontSize(10);
+        const improvements = cv.improvements?.slice(0, 10).join('\n\n• ') || 'None';
+        const splitImprovements = doc.splitTextToSize('• ' + improvements, 170);
+        doc.text(splitImprovements, 20, 80);
+
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.text('Original CV Text:', 20, 20);
+        doc.setFontSize(8);
+        const splitText = doc.splitTextToSize(cv.cv_text || '', 180);
+        doc.text(splitText, 15, 30);
+
+        doc.save(`Hirena_Analysis_${new Date(cv.created_at).getTime()}.pdf`);
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -195,10 +236,22 @@ export default function CVManagement() {
                                             <div className="h-full bg-brand-emerald-500 transition-all duration-1000" style={{ width: `${cv.score}%` }}></div>
                                         </div>
                                         <div className="flex items-center gap-2 pt-2">
-                                            <button className="flex-1 px-3 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center justify-center gap-1.5 border border-slate-100">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelectCV(cv);
+                                                }}
+                                                className="flex-1 px-3 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center justify-center gap-1.5 border border-slate-100"
+                                            >
                                                 <Eye className="w-3.5 h-3.5" /> View
                                             </button>
-                                            <button className="flex-1 px-3 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center justify-center gap-1.5 border border-slate-100">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDownloadCV(cv);
+                                                }}
+                                                className="flex-1 px-3 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center justify-center gap-1.5 border border-slate-100"
+                                            >
                                                 <Download className="w-3.5 h-3.5" /> PDF
                                             </button>
                                         </div>
