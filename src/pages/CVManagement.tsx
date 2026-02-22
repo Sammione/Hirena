@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
     FileText,
@@ -13,20 +13,58 @@ import {
     Zap,
     Loader2,
     Sparkles,
-    Check
+    Check,
+    ChevronRight,
+    Play
 } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { analyzeCV, CVAnalysis, rewriteBulletPoint, generateCoverLetter } from '../lib/openai';
+import {
+    analyzeCV,
+    CVAnalysis,
+    rewriteBulletPoint,
+    generateCoverLetter,
+    createCareerRoadmap,
+    CareerRoadmap
+} from '../lib/openai';
 import { extractTextFromFile } from '../utils/docs';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function CVManagement() {
+    const navigate = useNavigate();
     const location = useLocation();
     const [activeTab, setActiveTab] = useState('My CVs');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<CVAnalysis | null>(null);
+    const [learningPlan, setLearningPlan] = useState<CareerRoadmap | null>(null);
+    const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const handleGenerateLearningPlan = async () => {
+        if (!analysisResult?.skillGaps?.length) {
+            alert("No skill gaps detected to generate a plan for!");
+            return;
+        }
+
+        setIsGeneratingPlan(true);
+        try {
+            const plan = await createCareerRoadmap(
+                `Bridge the core skill gaps: ${analysisResult.skillGaps.join(', ')}`,
+                []
+            );
+            setLearningPlan(plan);
+            // Scroll to the roadmap section
+            setTimeout(() => {
+                const roadmapEl = document.getElementById('learning-roadmap');
+                roadmapEl?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        } catch (err) {
+            console.error('Plan generation failed:', err);
+            setError('Failed to generate learning plan.');
+        } finally {
+            setIsGeneratingPlan(false);
+        }
+    };
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [optimizedBullet, setOptimizedBullet] = useState('');
     const [bulletInput, setBulletInput] = useState('');
@@ -126,6 +164,7 @@ export default function CVManagement() {
     };
 
     const handleSelectCV = (cv: any) => {
+        setLearningPlan(null); // Clear previous plan
         setAnalysisResult({
             score: cv.score,
             readinessScore: cv.readiness_score,
@@ -485,23 +524,106 @@ export default function CVManagement() {
                         <div className="relative z-10">
                             <h4 className="text-sm font-black uppercase tracking-widest mb-4 text-brand-emerald-400">Skill Gaps</h4>
                             <div className="flex flex-wrap gap-2 mb-6">
-                                {(analysisResult?.skillGaps || ['Docker', 'AWS', 'Kubernetes']).map((gap: any, i: number) => (
-                                    <span key={i} className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md text-[10px] font-black text-white rounded-lg border border-white/10 group-hover:border-brand-emerald-400 transition-colors">
-                                        {gap}
-                                    </span>
-                                ))}
+                                {analysisResult?.skillGaps && analysisResult.skillGaps.length > 0 ? (
+                                    analysisResult.skillGaps.map((gap: any, i: number) => (
+                                        <span key={i} className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md text-[10px] font-black text-white rounded-lg border border-white/10 group-hover:border-brand-emerald-400 transition-colors">
+                                            {gap}
+                                        </span>
+                                    ))
+                                ) : analysisResult ? (
+                                    <span className="text-xs text-brand-emerald-400 font-bold italic">No gaps detected! You're ready.</span>
+                                ) : (
+                                    ['Docker', 'AWS', 'Kubernetes'].map((gap: any, i: number) => (
+                                        <span key={i} className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md text-[10px] font-black text-white/30 rounded-lg border border-white/5">
+                                            {gap}
+                                        </span>
+                                    ))
+                                )}
                             </div>
                             <p className="text-xs text-brand-blue-200 mb-6 font-medium leading-relaxed">
-                                Our AI detected these high-value skills are missing from your profile compared to global remote roles.
+                                {analysisResult?.skillGaps?.length
+                                    ? `Our AI detected these ${analysisResult.skillGaps.length} skills are missing compared to roles in ${analysisResult.sections?.keywords?.score < 50 ? 'global tech' : 'top companies'}.`
+                                    : "Upload your CV to identify high-value skills missing from your profile."
+                                }
                             </p>
-                            <button className="w-full py-3 bg-brand-emerald-500 hover:bg-brand-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-emerald-500/20 active:scale-95">
-                                Generate Learning Plan
+                            <button
+                                onClick={handleGenerateLearningPlan}
+                                disabled={isGeneratingPlan || !analysisResult?.skillGaps?.length}
+                                className="w-full py-3 bg-brand-emerald-500 hover:bg-brand-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                            >
+                                {isGeneratingPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                                {isGeneratingPlan ? "Building Your Path..." : "Generate Learning Plan"}
                             </button>
                         </div>
                         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
                     </div>
+
+                    {learningPlan && (
+                        <div id="learning-roadmap" className="card p-6 bg-white border-2 border-brand-emerald-500/20 shadow-xl animate-in slide-in-from-bottom-4">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-brand-emerald-50 rounded-xl">
+                                    <Sparkles className="w-5 h-5 text-brand-emerald-500" />
+                                </div>
+                                <h3 className="text-lg font-black text-slate-900">Your Learning Roadmap</h3>
+                            </div>
+
+                            <div className="space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+                                {learningPlan.milestones.map((ms, idx) => (
+                                    <div key={idx} className="relative pl-10">
+                                        <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-brand-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-lg shadow-brand-emerald-500/20 border-4 border-white z-10">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:border-brand-emerald-300 transition-all">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-bold text-slate-900 text-sm leading-tight">{ms.title}</h4>
+                                                <span className="text-[10px] font-black text-brand-emerald-600 bg-brand-emerald-50 px-2 py-0.5 rounded uppercase">{ms.estimatedDuration}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mb-3 leading-relaxed">{ms.description}</p>
+
+                                            <div className="flex flex-wrap gap-1.5 mb-4">
+                                                {ms.skillsToLearn.map(skill => (
+                                                    <span key={skill} className="px-2 py-0.5 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase">{skill}</span>
+                                                ))}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Top Resources</p>
+                                                {ms.resources.map((res, ridx) => (
+                                                    <a
+                                                        key={ridx}
+                                                        href={res.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl hover:border-brand-emerald-500 group/link transition-all"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-1.5 bg-slate-50 rounded-lg group-hover/link:bg-brand-emerald-50 transition-all">
+                                                                <Play className="w-3 h-3 text-slate-400 group-hover/link:text-brand-emerald-500" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-bold text-slate-700 group-hover/link:text-brand-emerald-700">{res.title}</p>
+                                                                <p className="text-[9px] font-medium text-slate-400">{res.platform}</p>
+                                                            </div>
+                                                        </div>
+                                                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover/link:text-brand-emerald-500 transition-all" />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-8 p-4 bg-brand-blue-900/5 rounded-2xl border border-brand-blue-900/10">
+                                <p className="text-[10px] font-bold text-brand-blue-900 uppercase tracking-widest mb-2">Expert Advice</p>
+                                <p className="text-xs text-slate-600 leading-relaxed font-medium italic">
+                                    "{learningPlan.summary}"
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
-        </div >
+        </div>
     );
 }
