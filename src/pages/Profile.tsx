@@ -137,6 +137,14 @@ export default function Profile() {
 
             if (upsertError) throw upsertError;
 
+            // NEW: Also save the raw text to cv_analyses so other pages can see it
+            await supabase.from('cv_analyses').insert({
+                user_id: user.id,
+                cv_text: text,
+                score: 70, // Default estimate
+                readiness_score: 70
+            });
+
             await fetchProfile();
             alert('Success! Your profile has been updated from your CV.');
         } catch (err: any) {

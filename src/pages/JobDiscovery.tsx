@@ -86,16 +86,39 @@ export default function JobDiscovery() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data } = await supabase
+        const { data: cvData } = await supabase
             .from('cv_analyses')
             .select('cv_text')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
-        if (data) {
-            setUserCV(data.cv_text);
+        if (cvData?.cv_text) {
+            setUserCV(cvData.cv_text);
+        } else {
+            // Fallback: If no CV file uploaded, build one from Profile data
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name, bio, skills, experience, target_role')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (profile) {
+                const experienceString = Array.isArray(profile.experience)
+                    ? profile.experience.map((exp: any) => `${exp.title} at ${exp.company} (${exp.duration})`).join('\n')
+                    : '';
+
+                const constructedCV = `
+                    Name: ${profile.full_name}
+                    Target Role: ${profile.target_role}
+                    Bio: ${profile.bio}
+                    Skills: ${Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills}
+                    Experience:
+                    ${experienceString}
+                `;
+                setUserCV(constructedCV);
+            }
         }
     };
 
