@@ -322,4 +322,37 @@ export const getCompanyInsights = async (companyName: string) => {
     return response.choices[0].message.content || 'Failed to fetch company insights.';
 };
 
+export const optimizeCVForJob = async (cvText: string, jobDescription: string): Promise<string> => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `You are a master resume optimizer. Your task is to rewrite the user's CV to perfectly align with the provided job description.
+                1. Identify the key skills and requirements in the job description.
+                2. Rephrase experience bullet points to highlight matching achievements.
+                3. Ensure keywords from the JD are naturally woven into the skills and summary sections.
+                4. Maintain a professional, high-impact tone.
+                5. Return the full optimized CV in a clean Markdown format that is ready to be converted to PDF.
+                
+                Structure to follow:
+                # FULL NAME
+                [Professional Summary re-written for the JD]
+                
+                ## Experience
+                [Modified bullet points]
+                
+                ## Skills
+                [Grouped relevant skills for this specific JD]`
+            },
+            {
+                role: 'user',
+                content: `Original CV: ${cvText}\n\nTarget Job Description: ${jobDescription}`
+            }
+        ]
+    });
+
+    return response.choices[0].message.content || 'Failed to optimize CV.';
+};
+
 export default openai;

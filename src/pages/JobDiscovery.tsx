@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles, Ghost, Navigation } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { matchSkillsToJob } from '../lib/openai';
+import { matchSkillsToJob, optimizeCVForJob } from '../lib/openai';
 import { searchJobs, Job } from '../lib/jobs';
 import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
+import jsPDF from 'jspdf';
 
 export default function JobDiscovery() {
     const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function JobDiscovery() {
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('All');
     const [matchingJobId, setMatchingJobId] = useState<string | null>(null);
+    const [optimizingJobId, setOptimizingJobId] = useState<string | null>(null);
     const [matchResults, setMatchResults] = useState<Record<string, any>>({});
     const [userCV, setUserCV] = useState<string>('');
     const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -175,6 +177,39 @@ export default function JobDiscovery() {
             console.error('Matching failed:', error);
         } finally {
             setMatchingJobId(null);
+        }
+    };
+
+    const handleOptimizeCV = async (job: Job) => {
+        if (!userCV) {
+            alert('Please upload your CV on the CV Management or Profile page first!');
+            return;
+        }
+
+        setOptimizingJobId(job.id);
+        try {
+            const jobDescription = `${job.title} at ${job.company}. ${job.description}`;
+            const optimizedText = await optimizeCVForJob(userCV, jobDescription);
+
+            // Create PDF
+            const doc = new jsPDF();
+            const splitText = doc.splitTextToSize(optimizedText, 180);
+            doc.setFontSize(11);
+            doc.text(splitText, 15, 20);
+            doc.save(`Hirena_Optimized_CV_${job.company.replace(/\s+/g, '_')}.pdf`);
+
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#10B981', '#3B82F6']
+            });
+
+        } catch (error) {
+            console.error('Optimization failed:', error);
+            alert('CV Optimization failed. Please try again.');
+        } finally {
+            setOptimizingJobId(null);
         }
     };
 
@@ -363,7 +398,7 @@ export default function JobDiscovery() {
                                                             handleMatch(job);
                                                         }}
                                                         disabled={matchingJobId === job.id}
-                                                        className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all disabled:opacity-50"
+                                                        className="flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all disabled:opacity-50"
                                                     >
                                                         {matchingJobId === job.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-brand-emerald-500" />}
                                                         Match with AI
@@ -371,9 +406,20 @@ export default function JobDiscovery() {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
+                                                            handleOptimizeCV(job);
+                                                        }}
+                                                        disabled={optimizingJobId === job.id}
+                                                        className="flex items-center gap-2 bg-brand-emerald-50 text-brand-emerald-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-emerald-100 transition-all disabled:opacity-50 border border-brand-emerald-100/50"
+                                                    >
+                                                        {optimizingJobId === job.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-brand-emerald-500" />}
+                                                        Optimize CV
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             navigate('/cv', { state: { jobTitle: job.title, jobDetails: job.description } });
                                                         }}
-                                                        className="flex items-center gap-2 bg-white border border-brand-emerald-500 text-brand-emerald-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-emerald-50 transition-all font-sans"
+                                                        className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all font-sans"
                                                     >
                                                         Tailor Letter
                                                     </button>
