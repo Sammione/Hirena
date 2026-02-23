@@ -16,45 +16,54 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 
+const TERMINAL_LINES = [
+    '> Initializing Hirena Ghost Protocol...',
+    '> Scanning global job boards [LinkedIn, Indeed, Otta]...',
+    '> Pattern matching User_001 skills against 432 roles...',
+    '> Found 94% match at NeuraCore AI.',
+    '> Generating tailored cover letter...',
+    '> Sending WhatsApp alert to user...',
+    '> STATUS: ACTIVE. Hunting continues...'
+];
+
 export default function Landing() {
     const navigate = useNavigate();
     const [scrolled, setScrolled] = useState(false);
-    const [terminalText, setTerminalText] = useState('');
-    const fullTerminalText = [
-        '> Initializing Hirena Ghost Protocol...',
-        '> Scanning global job boards [LinkedIn, Indeed, Otta]...',
-        '> Pattern matching User_001 skills against 432 roles...',
-        '> Found 94% match at NeuraCore AI.',
-        '> Generating tailored cover letter...',
-        '> Sending WhatsApp alert to user...',
-        '> STATUS: ACTIVE. Hunting continues...'
-    ];
+    const [terminalLines, setTerminalLines] = useState<string[]>([]);
+    const [currentLineIndex, setCurrentLineIndex] = useState(0);
+    const [currentCharIndex, setCurrentCharIndex] = useState(0);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
-        let i = 0;
-        let line = 0;
-        const interval = setInterval(() => {
-            if (line < fullTerminalText.length) {
-                setTerminalText(prev => prev + fullTerminalText[line][i]);
-                i++;
-                if (i >= fullTerminalText[line].length) {
-                    setTerminalText(prev => prev + '\n');
-                    i = 0;
-                    line++;
-                }
+    useEffect(() => {
+        if (currentLineIndex >= TERMINAL_LINES.length) return;
+
+        const timer = setTimeout(() => {
+            const currentFullLine = TERMINAL_LINES[currentLineIndex];
+
+            if (currentCharIndex < currentFullLine.length) {
+                setTerminalLines(prev => {
+                    const newLines = [...prev];
+                    if (newLines[currentLineIndex] === undefined) {
+                        newLines[currentLineIndex] = currentFullLine[currentCharIndex];
+                    } else {
+                        newLines[currentLineIndex] += currentFullLine[currentCharIndex];
+                    }
+                    return newLines;
+                });
+                setCurrentCharIndex(prev => prev + 1);
             } else {
-                clearInterval(interval);
+                setCurrentLineIndex(prev => prev + 1);
+                setCurrentCharIndex(0);
             }
         }, 30);
 
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            clearInterval(interval);
-        };
-    }, []);
+        return () => clearTimeout(timer);
+    }, [currentLineIndex, currentCharIndex]);
 
     const features = [
         {
@@ -172,7 +181,9 @@ export default function Landing() {
                                 </div>
                             </div>
                             <div className="p-6 text-left font-mono text-sm text-brand-emerald-400/90 leading-relaxed whitespace-pre-wrap min-h-[220px]">
-                                {terminalText}
+                                {terminalLines.map((line, idx) => (
+                                    <div key={idx}>{line}</div>
+                                ))}
                                 <span className="w-2 h-4 bg-brand-emerald-500 inline-block animate-pulse ml-1 align-middle" />
                             </div>
                         </div>
