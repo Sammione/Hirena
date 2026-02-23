@@ -225,6 +225,132 @@ export default function Landing() {
                 </div>
             </section>
 
+            {/* Pricing Section */}
+            <section id="pricing" className="py-32 px-6">
+                <div className="max-w-6xl mx-auto">
+                    <div className="text-center mb-20">
+                        <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter mb-4">
+                            Choose Your Hunter Level
+                        </h2>
+                        <p className="text-slate-400 font-medium text-lg max-w-2xl mx-auto">
+                            Whether you're just starting your hunt or looking for full autonomous career management, we have a protocol for you.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {/* Basic Tier */}
+                        <div className="group p-8 bg-white/5 border border-white/10 rounded-[32px] hover:border-white/20 transition-all flex flex-col">
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-white mb-2">Scout</h3>
+                                <p className="text-slate-500 text-sm font-medium">For occasional hunters.</p>
+                            </div>
+                            <div className="mb-8">
+                                <span className="text-4xl font-black text-white">$0</span>
+                                <span className="text-slate-500 text-sm font-bold ml-2 uppercase tracking-widest">Free</span>
+                            </div>
+                            <ul className="space-y-4 mb-10 flex-1">
+                                {[
+                                    '1 CV Analysis / Month',
+                                    'Manual Job Discovery',
+                                    'Basic Salary Insights',
+                                    'Community Support'
+                                ].map((feat) => (
+                                    <li key={feat} className="flex items-center gap-3 text-sm text-slate-300 font-medium">
+                                        <CheckCircle2 className="w-4 h-4 text-slate-600" />
+                                        {feat}
+                                    </li>
+                                ))}
+                            </ul>
+                            <button
+                                onClick={() => navigate('/onboarding')}
+                                className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all"
+                            >
+                                Start for Free
+                            </button>
+                        </div>
+
+                        {/* Pro Tier (Ghost) */}
+                        <div className="group p-8 bg-gradient-to-b from-brand-emerald-500/10 to-transparent border-2 border-brand-emerald-500/50 rounded-[32px] relative shadow-2xl shadow-brand-emerald-500/10 flex flex-col transform md:-translate-y-4">
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-emerald-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-emerald-500/20">
+                                Most Popular
+                            </div>
+                            <div className="mb-8 pt-4">
+                                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                    Ghost <Zap className="w-4 h-4 text-brand-emerald-400 fill-current" />
+                                </h3>
+                                <p className="text-slate-400 text-sm font-medium">Full autonomous hunting suite.</p>
+                            </div>
+                            <div className="mb-8">
+                                <span className="text-4xl font-black text-white">$19</span>
+                                <span className="text-slate-500 text-sm font-bold ml-2 uppercase tracking-widest">/ Month</span>
+                            </div>
+                            <ul className="space-y-4 mb-10 flex-1">
+                                {[
+                                    'Unlimited CV Analyses',
+                                    '24/7 Ghost Hunter AI',
+                                    'Real-time WhatsApp Alerts',
+                                    'Career Time Machine (5Y)',
+                                    'AI Cover Letter Generator',
+                                    'Salary Negotiator Bot'
+                                ].map((feat) => (
+                                    <li key={feat} className="flex items-center gap-3 text-sm text-white font-bold">
+                                        <CheckCircle2 className="w-5 h-5 text-brand-emerald-500" />
+                                        {feat}
+                                    </li>
+                                ))}
+                                <li className="flex items-center gap-3 text-sm text-brand-emerald-400 font-black italic">
+                                    <Sparkles className="w-5 h-5" />
+                                    Ghost Apply (Beta)
+                                </li>
+                            </ul>
+                            <button
+                                onClick={() => navigate('/onboarding')}
+                                className="w-full py-5 bg-brand-emerald-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-brand-emerald-500/20 hover:bg-brand-emerald-600 transition-all active:scale-95"
+                            >
+                                Go Pro Now
+                            </button>
+                        </div>
+
+                        {/* Enterprise Tier */}
+                        <div className="group p-8 bg-white/5 border border-white/10 rounded-[32px] hover:border-white/20 transition-all flex flex-col">
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-white mb-2">Phantom</h3>
+                                <p className="text-slate-500 text-sm font-medium">For high-end talent & execs.</p>
+                            </div>
+                            <div className="mb-8">
+                                <span className="text-4xl font-black text-white">$49</span>
+                                <span className="text-slate-500 text-sm font-bold ml-2 uppercase tracking-widest">/ Month</span>
+                            </div>
+                            <ul className="space-y-4 mb-10 flex-1">
+                                {[
+                                    'Everything in Ghost Pro',
+                                    'Executive Deep-Dive Reports',
+                                    '1-on-1 AI Strategy Calls',
+                                    'Priority RapidAPI Nodes',
+                                    'Phantom Apply (Full Auto)',
+                                    'White-Glove Onboarding'
+                                ].map((feat) => (
+                                    <li key={feat} className="flex items-center gap-3 text-sm text-slate-300 font-medium">
+                                        <CheckCircle2 className="w-4 h-4 text-brand-blue-400" />
+                                        {feat}
+                                    </li>
+                                ))}
+                            </ul>
+                            <button
+                                onClick={() => navigate('/onboarding')}
+                                className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all"
+                            >
+                                Contact Sales
+                            </button>
+                        </div>
+                    </div>
+
+                    <p className="text-center mt-12 text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">
+                        Secure Checkout via Stripe • Cancel Anytime
+                    </p>
+                </div>
+            </section>
+
             {/* Stats / CTA Area */}
             <section className="py-32 px-6 relative">
                 <div className="absolute inset-0 bg-brand-emerald-500/5 -z-10" />
