@@ -132,6 +132,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
 };
 
+const Settings = lazy(() => import('./pages/Settings'));
+
 function App() {
     return (
         <Router>
@@ -159,7 +161,7 @@ function App() {
                         <Route path="/negotiator" element={<SalaryNegotiator />} />
                         <Route path="/company-insights" element={<CompanyInsights />} />
                         <Route path="/ghost-hunter" element={<GhostHunter />} />
-                        <Route path="/settings" element={<Profile />} />
+                        <Route path="/settings" element={<Settings />} />
                     </Route>
 
                     {/* Fallback */}
