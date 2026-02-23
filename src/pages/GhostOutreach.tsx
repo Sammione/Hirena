@@ -17,7 +17,7 @@ import {
     Send
 } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { generateGhostOutreach } from '../lib/openai';
+import { generateGhostOutreach, fetchCompanyIntelligence } from '../lib/openai';
 
 export default function GhostOutreach() {
     const [companyName, setCompanyName] = useState('');
@@ -48,19 +48,19 @@ export default function GhostOutreach() {
         if (cvData?.cv_text) setCvText(cvData.cv_text);
     };
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!companyName) return;
         setIsSearching(true);
-        // Simulate Phantom API search for hiring manager & news
-        setTimeout(() => {
-            setHiringManager({
-                name: 'Sarah Chen',
-                role: 'Dir. of Engineering at ' + companyName,
-                profile: 'https://linkedin.com/in/sarahchen'
-            });
-            setRecentNews(companyName + ' recently secured $45M Series C funding to expand AI infrastructure across EMEA.');
+        setOutreachDraft(''); // Reset
+        try {
+            const data = await fetchCompanyIntelligence(companyName);
+            setHiringManager(data.manager);
+            setRecentNews(data.news);
+        } catch (err) {
+            console.error('Intelligence fetch failed:', err);
+        } finally {
             setIsSearching(false);
-        }, 1500);
+        }
     };
 
     const handleGenerateOutreach = async () => {

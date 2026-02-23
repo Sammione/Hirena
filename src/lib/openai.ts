@@ -385,4 +385,32 @@ export const generateGhostOutreach = async (
     return response.choices[0].message.content || 'Failed to generate outreach message.';
 };
 
+export const fetchCompanyIntelligence = async (companyName: string) => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `You are a corporate intelligence agent. Given a company name, provide:
+                1. A likely name and role of a hiring manager (e.g. Director of Engineering, Head of Talent).
+                2. A piece of realistic, high-signal recent news about the company (funding, product launch, expansion).
+                3. A professional LinkedIn-style profile URL placeholder.
+                
+                Return a JSON object:
+                {
+                  "manager": { "name": "string", "role": "string", "profile": "string" },
+                  "news": "string"
+                }`
+            },
+            {
+                role: 'user',
+                content: `Research company: ${companyName}`
+            }
+        ],
+        response_format: { type: 'json_object' }
+    });
+
+    return JSON.parse(response.choices[0].message.content || '{}');
+};
+
 export default openai;
