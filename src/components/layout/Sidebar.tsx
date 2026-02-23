@@ -15,13 +15,15 @@ import {
     DollarSign,
     Building2,
     History,
-    Ghost
+    Ghost,
+    Users
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navigation = {
     HUNTING: [
         { icon: Ghost, label: 'Ghost Hunter', path: '/ghost-hunter' },
+        { icon: Users, label: 'Network Intelligence', path: '/outreach' },
         { icon: Briefcase, label: 'Job Discovery', path: '/jobs' },
         { icon: Building2, label: 'Company Deep-Dive', path: '/company-insights' },
     ],

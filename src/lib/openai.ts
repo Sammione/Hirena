@@ -355,4 +355,34 @@ export const optimizeCVForJob = async (cvText: string, jobDescription: string): 
     return response.choices[0].message.content || 'Failed to optimize CV.';
 };
 
+export const generateGhostOutreach = async (
+    cvText: string,
+    companyName: string,
+    recentNews?: string
+): Promise<string> => {
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `You are a networking expert for high-end professionals. 
+                Your task is to draft a "High-Signal" outreach message to a hiring manager.
+                
+                Rules:
+                1. Reference a specific recent achievement or news about the company (provided by the user).
+                2. Connect that achievement to a specific strength or achievement from the user's CV.
+                3. Keep it brief (under 150 words).
+                4. Use a low-friction "Ask" (e.g. 10-min sync, not "Give me a job").
+                5. Use a sophisticated, peer-to-peer tone (not a desperate applicant).`
+            },
+            {
+                role: 'user',
+                content: `Candidate CV: ${cvText}\n\nCompany: ${companyName}\nRecent News: ${recentNews || 'General growth and innovation.'}`
+            }
+        ]
+    });
+
+    return response.choices[0].message.content || 'Failed to generate outreach message.';
+};
+
 export default openai;

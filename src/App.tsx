@@ -19,6 +19,7 @@ const Onboarding = lazy(() => import('./pages/Onboarding'));
 const SalaryNegotiator = lazy(() => import('./pages/SalaryNegotiator'));
 const CompanyInsights = lazy(() => import('./pages/CompanyInsights'));
 const GhostHunter = lazy(() => import('./pages/GhostHunter'));
+const GhostOutreach = lazy(() => import('./pages/GhostOutreach'));
 
 // Loading component
 const PageLoader = () => (
@@ -161,6 +162,7 @@ function App() {
                         <Route path="/negotiator" element={<SalaryNegotiator />} />
                         <Route path="/company-insights" element={<CompanyInsights />} />
                         <Route path="/ghost-hunter" element={<GhostHunter />} />
+                        <Route path="/outreach" element={<GhostOutreach />} />
                         <Route path="/settings" element={<Settings />} />
                     </Route>
 
