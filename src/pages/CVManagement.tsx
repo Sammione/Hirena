@@ -15,7 +15,8 @@ import {
     Sparkles,
     Check,
     ChevronRight,
-    Play
+    Play,
+    Trash2
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import {
@@ -205,6 +206,39 @@ export default function CVManagement() {
         doc.save(`Hirena_Analysis_${new Date(cv.created_at).getTime()}.pdf`);
     };
 
+    const handleDeleteCV = async (cvId: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const isConfirmed = window.confirm("Are you sure you want to delete this CV analysis? This action cannot be undone.");
+        if (!isConfirmed) return;
+
+        try {
+            const { error } = await supabase
+                .from('cv_analyses')
+                .delete()
+                .eq('id', cvId)
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+
+            // Update UI
+            setCvVersions(prev => prev.filter(cv => cv.id !== cvId));
+
+            // Clear current analysis if it was the one deleted
+            // Since we don't store the ID in analysisResult, we'll just keep it or the user can select another.
+            // If the list becomes empty, clear it.
+            if (cvVersions.length <= 1) {
+                setAnalysisResult(null);
+                setLearningPlan(null);
+            }
+
+        } catch (err: any) {
+            console.error('Delete failed:', err);
+            setError(err.message || 'Failed to delete CV analysis.');
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -292,6 +326,16 @@ export default function CVManagement() {
                                                 className="flex-1 px-3 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center justify-center gap-1.5 border border-slate-100"
                                             >
                                                 <Download className="w-3.5 h-3.5" /> PDF
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteCV(cv.id);
+                                                }}
+                                                className="px-3 py-2.5 bg-red-50 hover:bg-red-100 rounded-xl text-xs font-bold text-red-600 transition-all flex items-center justify-center gap-1.5 border border-red-100"
+                                                title="Delete Analysis"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
                                     </div>
