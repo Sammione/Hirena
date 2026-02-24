@@ -22,6 +22,7 @@ import { generateGhostOutreach, fetchCompanyIntelligence } from '../lib/openai';
 export default function GhostOutreach() {
     const [companyName, setCompanyName] = useState('');
     const [hiringManager, setHiringManager] = useState({ name: '', role: '', profile: '' });
+    const [ceo, setCeo] = useState({ name: '', role: '', profile: '' });
     const [recentNews, setRecentNews] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -55,6 +56,7 @@ export default function GhostOutreach() {
         try {
             const data = await fetchCompanyIntelligence(companyName);
             setHiringManager(data.manager);
+            setCeo(data.ceo);
             setRecentNews(data.news);
         } catch (err) {
             console.error('Intelligence fetch failed:', err);
@@ -128,29 +130,56 @@ export default function GhostOutreach() {
                         </div>
                     </div>
 
-                    {companyName && hiringManager.name && (
+                    {companyName && (hiringManager.name || ceo.name) && (
                         <div className="card p-8 bg-slate-900 text-white relative overflow-hidden animate-in zoom-in-95 duration-300">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-6">Decision Maker Detected</h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-6">Decision Makers Detected</h3>
 
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-purple-500/20">
-                                    {hiringManager.name.split(' ').map(n => n[0]).join('')}
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-lg text-white leading-tight">{hiringManager.name}</h4>
-                                    <p className="text-slate-400 text-xs font-bold">{hiringManager.role}</p>
-                                </div>
+                            <div className="space-y-8">
+                                {ceo.name && (
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-brand-blue-500 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-brand-blue-500/20">
+                                                {ceo.name.split(' ').map(n => n[0]).join('')}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-md text-white leading-tight">{ceo.name}</h4>
+                                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{ceo.role}</p>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href={ceo.profile}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full py-2 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                                        >
+                                            <Globe className="w-3 h-3" /> View CEO Profile
+                                        </a>
+                                    </div>
+                                )}
+
+                                {hiringManager.name && (
+                                    <div className="flex flex-col gap-4 pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-purple-500/20">
+                                                {hiringManager.name.split(' ').map(n => n[0]).join('')}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-md text-white leading-tight">{hiringManager.name}</h4>
+                                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{hiringManager.role}</p>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href={hiringManager.profile}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full py-2 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                                        >
+                                            <Globe className="w-3 h-3" /> View Manager Profile
+                                        </a>
+                                    </div>
+                                )}
                             </div>
-
-                            <a
-                                href={hiringManager.profile}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full py-3 bg-white/5 border border-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-all mb-4"
-                            >
-                                <Globe className="w-4 h-4" /> View LinkedIn Profile
-                            </a>
                         </div>
                     )}
                 </div>

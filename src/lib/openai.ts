@@ -393,22 +393,32 @@ export const fetchCompanyIntelligence = async (companyName: string) => {
         messages: [
             {
                 role: 'system',
-                content: `You are a corporate intelligence agent. Your job is to identify the most relevant hiring decision-maker (e.g., Head of Engineering, HR Director, or Talent Acquisition Manager) at a specific company.
+                content: `You are a corporate intelligence agent. Your job is to research and identify key leadership and hiring decision-makers at a specific company.
+                
+                Research Goals:
+                1. Identify the current CEO of the company.
+                2. Identify the most relevant hiring decision-maker for a professional role (e.g., VP of HR, Head of Talent, or a Director).
                 
                 Guidelines:
-                1. Provide a likely name and role. If you are not 100% certain of a current individual, use a generic but accurate title (e.g., "HR Director at [Company]") and name can be "Hiring Lead".
-                2. IMPORTANT: Instead of a fake direct profile URL, provide a LinkedIn SEARCH URL that is filtered for that person/role at that company. This ensures the user can find the ACTUAL current person.
-                   Format: https://www.linkedin.com/search/results/people/?keywords=[Title]%20at%20[Company]
-                3. Find a piece of high-signal, realistic recent news or a strategic priority for this company to use as an outreach hook.
+                1. For the Manager: If you cannot find a specific individual's name with high confidence, use a general but descriptive "Hiring Executive" name or "Hiring Lead". NEVER leave the name empty.
+                2. For the CEO: Provide the actual name of the current CEO.
+                3. IMPORTANT: Provide LinkedIn SEARCH URLs for both. This is more reliable than a direct link.
+                   Format: https://www.linkedin.com/search/results/people/?keywords=[Role]%20at%20[Company]
+                4. Find a piece of high-signal, realistic recent news or strategic priority.
                 
                 Return a JSON object:
                 {
+                  "ceo": { 
+                    "name": "string (CEO Full Name)", 
+                    "role": "CEO", 
+                    "profile": "string (LinkedIn Search URL)"
+                  },
                   "manager": { 
                     "name": "string (Specific name or 'Hiring Lead')", 
                     "role": "string (Exact title)", 
-                    "profile": "string (The LinkedIn SEARCH URL)"
+                    "profile": "string (LinkedIn Search URL)"
                   },
-                  "news": "string (The outreach hook news)"
+                  "news": "string (High-signal news hook)"
                 }`
             },
             {
