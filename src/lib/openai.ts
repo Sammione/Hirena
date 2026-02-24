@@ -358,6 +358,7 @@ export const optimizeCVForJob = async (cvText: string, jobDescription: string): 
 export const generateGhostOutreach = async (
     cvText: string,
     companyName: string,
+    managerName: string,
     recentNews?: string
 ): Promise<string> => {
     const response = await openai.chat.completions.create({
@@ -366,14 +367,15 @@ export const generateGhostOutreach = async (
             {
                 role: 'system',
                 content: `You are a networking expert for high-end professionals. 
-                Your task is to draft a "High-Signal" outreach message to a hiring manager.
+                Your task is to draft a "High-Signal" outreach message to a hiring manager named ${managerName}.
                 
                 Rules:
-                1. Reference a specific recent achievement or news about the company (provided by the user).
-                2. Connect that achievement to a specific strength or achievement from the user's CV.
-                3. Keep it brief (under 150 words).
-                4. Use a low-friction "Ask" (e.g. 10-min sync, not "Give me a job").
-                5. Use a sophisticated, peer-to-peer tone (not a desperate applicant).`
+                1. Address the message to ${managerName}.
+                2. Reference a specific recent achievement or news about the company: ${recentNews || 'General growth'}.
+                3. Connect that achievement to a specific strength or achievement from the user's CV.
+                4. Keep it brief (under 150 words).
+                5. Use a low-friction "Ask" (e.g. 10-min sync, not "Give me a job").
+                6. Use a sophisticated, peer-to-peer tone (not a desperate applicant).`
             },
             {
                 role: 'user',
@@ -391,15 +393,22 @@ export const fetchCompanyIntelligence = async (companyName: string) => {
         messages: [
             {
                 role: 'system',
-                content: `You are a corporate intelligence agent. Given a company name, provide:
-                1. A likely name and role of a hiring manager (e.g. Director of Engineering, Head of Talent).
-                2. A piece of realistic, high-signal recent news about the company (funding, product launch, expansion).
-                3. A professional LinkedIn-style profile URL placeholder.
+                content: `You are a corporate intelligence agent. Your job is to identify the most relevant hiring decision-maker (e.g., Head of Engineering, HR Director, or Talent Acquisition Manager) at a specific company.
+                
+                Guidelines:
+                1. Provide a likely name and role. If you are not 100% certain of a current individual, use a generic but accurate title (e.g., "HR Director at [Company]") and name can be "Hiring Lead".
+                2. IMPORTANT: Instead of a fake direct profile URL, provide a LinkedIn SEARCH URL that is filtered for that person/role at that company. This ensures the user can find the ACTUAL current person.
+                   Format: https://www.linkedin.com/search/results/people/?keywords=[Title]%20at%20[Company]
+                3. Find a piece of high-signal, realistic recent news or a strategic priority for this company to use as an outreach hook.
                 
                 Return a JSON object:
                 {
-                  "manager": { "name": "string", "role": "string", "profile": "string" },
-                  "news": "string"
+                  "manager": { 
+                    "name": "string (Specific name or 'Hiring Lead')", 
+                    "role": "string (Exact title)", 
+                    "profile": "string (The LinkedIn SEARCH URL)"
+                  },
+                  "news": "string (The outreach hook news)"
                 }`
             },
             {

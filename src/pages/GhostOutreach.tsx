@@ -66,7 +66,7 @@ export default function GhostOutreach() {
     const handleGenerateOutreach = async () => {
         setIsGenerating(true);
         try {
-            const draft = await generateGhostOutreach(cvText, companyName, recentNews);
+            const draft = await generateGhostOutreach(cvText, companyName, hiringManager.name, recentNews);
             setOutreachDraft(draft);
         } catch (err) {
             console.error(err);
