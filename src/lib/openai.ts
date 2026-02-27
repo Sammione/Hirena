@@ -322,37 +322,43 @@ export const getCompanyInsights = async (companyName: string) => {
     return response.choices[0].message.content || 'Failed to fetch company insights.';
 };
 
-export const optimizeCVForJob = async (cvText: string, jobDescription: string): Promise<string> => {
+export type OptimizedCV = {
+    markdown: string;
+    latex: string;
+    summary: string;
+    explanation: string;
+};
+
+export const optimizeCVForJob = async (cvText: string, jobDescription: string): Promise<OptimizedCV> => {
     const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
             {
                 role: 'system',
-                content: `You are a master resume optimizer. Your task is to rewrite the user's CV to perfectly align with the provided job description.
-                1. Identify the key skills and requirements in the job description.
-                2. Rephrase experience bullet points to highlight matching achievements.
-                3. Ensure keywords from the JD are naturally woven into the skills and summary sections.
-                4. Maintain a professional, high-impact tone.
-                5. Return the full optimized CV in a clean Markdown format that is ready to be converted to PDF.
+                content: `You are a master resume optimizer and LaTeX expert. Your task is to rewrite the user's CV to perfectly align with the provided job description.
                 
-                Structure to follow:
-                # FULL NAME
-                [Professional Summary re-written for the JD]
+                CRITICAL RULES:
+                1. DO NOT DELETE core professional history (companies, roles, dates). You may rephrase bullets, but keep the scope of the user's experience intact.
+                2. FOCUS on highlighting achievements that match keywords in the Job Description (JD).
+                3. INTEGRATE JD-specific keywords naturally into the summary and bullet points.
+                4. STRUCTURE: Ensure a logical flow: Header -> Summary -> Experience -> Skills -> Education.
                 
-                ## Experience
-                [Modified bullet points]
-                
-                ## Skills
-                [Grouped relevant skills for this specific JD]`
+                OUTPUT FORMAT:
+                Return a JSON object with:
+                - "markdown": A clean, formatted markdown version.
+                - "latex": A professional, ready-to-compile LaTeX version using standard resume patterns. Use packages like 'geometry', 'enumitem', and 'hyperref' if needed, but keep it standard article class for compatibility.
+                - "summary": A 2-sentence overview of the primary changes made.
+                - "explanation": Briefly explain which JD keywords were prioritized.`
             },
             {
                 role: 'user',
                 content: `Original CV: ${cvText}\n\nTarget Job Description: ${jobDescription}`
             }
-        ]
+        ],
+        response_format: { type: 'json_object' }
     });
 
-    return response.choices[0].message.content || 'Failed to optimize CV.';
+    return JSON.parse(response.choices[0].message.content || '{}') as OptimizedCV;
 };
 
 export const generateGhostOutreach = async (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles, Ghost, Navigation } from 'lucide-react';
+import { Search, MapPin, Briefcase, Filter, ChevronRight, Star, Zap, Loader2, Sparkles, Ghost, Navigation, Copy, FileCode, Check, AlertCircle, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { matchSkillsToJob, optimizeCVForJob } from '../lib/openai';
 import { searchJobs, Job } from '../lib/jobs';
@@ -22,6 +22,8 @@ export default function JobDiscovery() {
     const [userCV, setUserCV] = useState<string>('');
     const [whatsappEnabled, setWhatsappEnabled] = useState(false);
     const [locationQuery, setLocationQuery] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
     const lastSearchRef = useRef<string>('');
 
     useEffect(() => {
@@ -203,6 +205,8 @@ export default function JobDiscovery() {
         }
     };
 
+    const [optimizedResult, setOptimizedResult] = useState<any>(null);
+
     const handleOptimizeCV = async (job: Job) => {
         if (!userCV) {
             alert('Please upload your CV on the CV Management or Profile page first!');
@@ -210,16 +214,14 @@ export default function JobDiscovery() {
         }
 
         setOptimizingJobId(job.id);
+        setError(null);
         try {
             const jobDescription = `${job.title} at ${job.company}. ${job.description}`;
-            const optimizedText = await optimizeCVForJob(userCV, jobDescription);
+            const result = await optimizeCVForJob(userCV, jobDescription);
+            setOptimizedResult({ ...result, jobCompany: job.company });
 
-            // Create PDF
-            const doc = new jsPDF();
-            const splitText = doc.splitTextToSize(optimizedText, 180);
-            doc.setFontSize(11);
-            doc.text(splitText, 15, 20);
-            doc.save(`Hirena_Optimized_CV_${job.company.replace(/\s+/g, '_')}.pdf`);
+            // Automatically trigger high-quality PDF generation
+            generateProfessionalPDF(result.markdown, job.company);
 
             confetti({
                 particleCount: 150,
@@ -230,14 +232,116 @@ export default function JobDiscovery() {
 
         } catch (error) {
             console.error('Optimization failed:', error);
-            alert('CV Optimization failed. Please try again.');
+            setError('CV Optimization failed. Please try again.');
         } finally {
             setOptimizingJobId(null);
         }
     };
 
+    const generateProfessionalPDF = (markdown: string, company: string) => {
+        const doc = new jsPDF();
+
+        // Simple but cleaner formatting than before
+        // In a real app, we'd use a hidden template div with html2canvas for "LaTeX" look
+        const lines = doc.splitTextToSize(markdown.replace(/#/g, '').replace(/\*/g, ''), 180);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("Optimized Professional Profile", 105, 20, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Tailored for ${company} via Hirena AI`, 105, 28, { align: "center" });
+
+        doc.setDrawColor(200);
+        doc.line(20, 35, 190, 35);
+
+        doc.setTextColor(0);
+        doc.setFontSize(11);
+        doc.text(lines, 15, 45);
+
+        doc.save(`Hirena_Optimized_CV_${company.replace(/\s+/g, '_')}.pdf`);
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {error && (
+                <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl flex items-center justify-between animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5" />
+                        <p className="text-sm font-medium">{error}</p>
+                    </div>
+                    <button onClick={() => setError(null)}><X className="w-4 h-4" /></button>
+                </div>
+            )}
+
+            {optimizedResult && (
+                <div className="bg-slate-950 rounded-[32px] p-8 border border-white/10 shadow-3xl animate-in zoom-in-95 duration-500 overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-brand-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-emerald-500/20">
+                                    <Sparkles className="text-white w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-white tracking-tight">Optimization Success</h2>
+                                    <p className="text-slate-400 text-sm font-medium">Tailored for {optimizedResult.jobCompany}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setOptimizedResult(null)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-emerald-400 mb-2">Strategy Summary</h3>
+                                    <p className="text-white font-bold leading-relaxed">{optimizedResult.summary}</p>
+                                </div>
+                                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-blue-400 mb-2">AI Explanation</h3>
+                                    <p className="text-slate-300 text-sm font-medium leading-relaxed">{optimizedResult.explanation}</p>
+                                </div>
+                                <button
+                                    onClick={() => generateProfessionalPDF(optimizedResult.markdown, optimizedResult.jobCompany)}
+                                    className="w-full py-4 bg-brand-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-brand-emerald-600 transition-all shadow-xl shadow-brand-emerald-500/20"
+                                >
+                                    Download Styled PDF
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between px-2">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                                        <FileCode className="w-4 h-4" /> Professional LaTeX Source
+                                    </h3>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(optimizedResult.latex);
+                                            setCopied(true);
+                                            setTimeout(() => setCopied(false), 2000);
+                                        }}
+                                        className="text-[10px] font-black uppercase text-brand-emerald-400 hover:text-brand-emerald-300 transition-colors flex items-center gap-1.5"
+                                    >
+                                        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                        {copied ? 'Copied' : 'Copy Code'}
+                                    </button>
+                                </div>
+                                <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 h-[250px] overflow-y-auto font-mono text-xs text-brand-emerald-400/80 leading-relaxed custom-scrollbar">
+                                    <pre className="whitespace-pre-wrap">{optimizedResult.latex}</pre>
+                                </div>
+                                <p className="text-[10px] text-slate-500 italic text-center">
+                                    Pro Tip: Paste this code into Overleaf for a pixel-perfect tech resume.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Job Discovery</h1>
