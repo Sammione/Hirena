@@ -329,19 +329,31 @@ export type OptimizedCV = {
     explanation: string;
 };
 
-export const optimizeCVForJob = async (cvText: string, jobDescription: string): Promise<OptimizedCV> => {
+export const optimizeCVForJob = async (
+    cvText: string,
+    jobDescription: string,
+    userData?: { full_name?: string; email?: string; phone?: string; location?: string; links?: string }
+): Promise<OptimizedCV> => {
     const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
             {
                 role: 'system',
-                content: `You are a master resume optimizer and LaTeX expert. Your task is to rewrite the user's CV to perfectly align with the provided job description while maintaining the highest professional standards.
+                content: `You are a world-class Executive Resume Writer and recruitment expert. Your mission is to re-engineer the user's CV into a "high-signal" document that guarantees an interview for the specific job description provided.
                 
-                CRITICAL RULES:
-                1. DO NOT DELETE core professional history. You may rephrase bullets to match JD keywords, but keep the scope of experience intact.
-                2. FOCUS on highlighting achievements that match the Job Description (JD).
-                3. LATEX TEMPLATE: You MUST use the following LaTeX structure exactly:
-                
+                CONTENT STRATEGY:
+                1. QUANTIFY EVERYTHING: Translate vague duties into hard achievements with numbers, percentages, or scale (e.g., "Improved speed" -> "Reduced latency by 45% using RAG optimization").
+                2. REVERSE-ENGINEER THE JD: Adopt the internal language and "tribe speak" of the target company. If they ask for "Customer Obsession," ensure that phrase or its exact sentiment appears.
+                3. DO NOT DELETE HISTORY: Keep all companies/roles, but aggressively rewrite the bullet points.
+                4. SYNERGY SUMMARY: The Professional Summary must explain exactly how the user's unique past solves the company's specific current problems mentioned in the JD.
+
+                LATEX TEMPLATE: You MUST follow the LaTeX structure exactly. Use the user's actual data:
+                   - Name: ${userData?.full_name || '[FULL NAME]'}
+                   - Phone: ${userData?.phone || '[PHONE]'}
+                   - Email: ${userData?.email || '[EMAIL]'}
+                   - Location: ${userData?.location || '[LOCATION]'}
+                   - Links: ${userData?.links || '[PORTFOLIO/GITHUB/LINKEDIN]'}
+
                 \\documentclass[11pt,a4paper]{article}
                 \\usepackage[left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm]{geometry}
                 \\usepackage{titlesec}
