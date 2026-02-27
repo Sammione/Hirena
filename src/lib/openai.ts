@@ -335,18 +335,50 @@ export const optimizeCVForJob = async (cvText: string, jobDescription: string): 
         messages: [
             {
                 role: 'system',
-                content: `You are a master resume optimizer and LaTeX expert. Your task is to rewrite the user's CV to perfectly align with the provided job description.
+                content: `You are a master resume optimizer and LaTeX expert. Your task is to rewrite the user's CV to perfectly align with the provided job description while maintaining the highest professional standards.
                 
                 CRITICAL RULES:
-                1. DO NOT DELETE core professional history (companies, roles, dates). You may rephrase bullets, but keep the scope of the user's experience intact.
-                2. FOCUS on highlighting achievements that match keywords in the Job Description (JD).
-                3. INTEGRATE JD-specific keywords naturally into the summary and bullet points.
-                4. STRUCTURE: Ensure a logical flow: Header -> Summary -> Experience -> Skills -> Education.
+                1. DO NOT DELETE core professional history. You may rephrase bullets to match JD keywords, but keep the scope of experience intact.
+                2. FOCUS on highlighting achievements that match the Job Description (JD).
+                3. LATEX TEMPLATE: You MUST use the following LaTeX structure exactly:
                 
+                \\documentclass[11pt,a4paper]{article}
+                \\usepackage[left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm]{geometry}
+                \\usepackage{titlesec}
+                \\usepackage{enumitem}
+                \\usepackage[hidelinks]{hyperref}
+                \\usepackage{xcolor}
+                \\usepackage{parskip}
+                \\definecolor{primary}{RGB}{0,102,153}
+                \\titleformat{\\section}{\\large\\bfseries\\color{primary}}{}{0em}{}[\\titlerule]
+                \\setlist[itemize]{noitemsep, topsep=0pt, leftmargin=1.2em}
+                \\newcommand{\\job}[4]{\\textbf{#1} \\hfill {\\small #2} \\\\ \\textit{#3} \\hfill {\\small #4} \\\\}
+                \\begin{document}
+                \\begin{center}
+                    {\\LARGE \\textbf{[FULL NAME]}}\\\\
+                    \\vspace{4pt}
+                    [PROFESSIONAL TITLES/KEYWORDS]\\\\
+                    \\vspace{4pt}
+                    [LOCATION] $\\cdot$ [PHONE] $\\cdot$ \\href{mailto:[EMAIL]}{[EMAIL]} \\\\
+                    [PORTFOLIO/GITHUB/LINKEDIN LINKS]
+                \\end{center}
+                \\vspace{6pt}
+                \\section*{Professional Summary}
+                [Tailored Summary]
+                \\section*{Core Skills}
+                [Grouped Skills]
+                \\section*{Professional Experience}
+                [Use \\job{Title}{Dates}{Company}{Location} and itemize blocks]
+                \\vspace{6pt}
+                \\hrule
+                \\vspace{4pt}
+                {\\small \\textit{Optimized Professional Profile — Tailored for [COMPANY NAME] via Hirena AI}}
+                \\end{document}
+
                 OUTPUT FORMAT:
                 Return a JSON object with:
                 - "markdown": A clean, formatted markdown version.
-                - "latex": A professional, ready-to-compile LaTeX version using standard resume patterns. Use packages like 'geometry', 'enumitem', and 'hyperref' if needed, but keep it standard article class for compatibility.
+                - "latex": The complete, compiled-ready LaTeX code following the template above.
                 - "summary": A 2-sentence overview of the primary changes made.
                 - "explanation": Briefly explain which JD keywords were prioritized.`
             },

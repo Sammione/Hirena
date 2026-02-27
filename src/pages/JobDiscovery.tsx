@@ -205,7 +205,7 @@ export default function JobDiscovery() {
         }
     };
 
-    const [optimizedResult, setOptimizedResult] = useState<any>(null);
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
 
     const handleOptimizeCV = async (job: Job) => {
         if (!userCV) {
@@ -218,10 +218,14 @@ export default function JobDiscovery() {
         try {
             const jobDescription = `${job.title} at ${job.company}. ${job.description}`;
             const result = await optimizeCVForJob(userCV, jobDescription);
-            setOptimizedResult({ ...result, jobCompany: job.company });
 
             // Automatically trigger high-quality PDF generation
             generateProfessionalPDF(result.markdown, job.company);
+
+            // Automatically copy LaTeX to clipboard
+            if (result.latex) {
+                await navigator.clipboard.writeText(result.latex);
+            }
 
             confetti({
                 particleCount: 150,
@@ -229,6 +233,9 @@ export default function JobDiscovery() {
                 origin: { y: 0.6 },
                 colors: ['#10B981', '#3B82F6']
             });
+
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 5000);
 
         } catch (error) {
             console.error('Optimization failed:', error);
@@ -276,72 +283,23 @@ export default function JobDiscovery() {
                 </div>
             )}
 
-            {optimizedResult && (
-                <div className="bg-slate-950 rounded-[32px] p-8 border border-white/10 shadow-3xl animate-in zoom-in-95 duration-500 overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
-
-                    <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-brand-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-emerald-500/20">
-                                    <Sparkles className="text-white w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-white tracking-tight">Optimization Success</h2>
-                                    <p className="text-slate-400 text-sm font-medium">Tailored for {optimizedResult.jobCompany}</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setOptimizedResult(null)} className="p-2 text-slate-500 hover:text-white transition-colors">
-                                <X className="w-6 h-6" />
-                            </button>
+            {showSuccessToast && (
+                <div className="fixed bottom-8 right-8 z-50 animate-in slide-in-from-right-4 duration-300">
+                    <div className="bg-slate-900 border border-brand-emerald-500/30 rounded-2xl p-6 shadow-2xl flex items-center gap-4">
+                        <div className="w-12 h-12 bg-brand-emerald-500 rounded-xl flex items-center justify-center">
+                            <Check className="text-white w-6 h-6" />
                         </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="space-y-6">
-                                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-emerald-400 mb-2">Strategy Summary</h3>
-                                    <p className="text-white font-bold leading-relaxed">{optimizedResult.summary}</p>
-                                </div>
-                                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-blue-400 mb-2">AI Explanation</h3>
-                                    <p className="text-slate-300 text-sm font-medium leading-relaxed">{optimizedResult.explanation}</p>
-                                </div>
-                                <button
-                                    onClick={() => generateProfessionalPDF(optimizedResult.markdown, optimizedResult.jobCompany)}
-                                    className="w-full py-4 bg-brand-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-brand-emerald-600 transition-all shadow-xl shadow-brand-emerald-500/20"
-                                >
-                                    Download Styled PDF
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between px-2">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                                        <FileCode className="w-4 h-4" /> Professional LaTeX Source
-                                    </h3>
-                                    <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(optimizedResult.latex);
-                                            setCopied(true);
-                                            setTimeout(() => setCopied(false), 2000);
-                                        }}
-                                        className="text-[10px] font-black uppercase text-brand-emerald-400 hover:text-brand-emerald-300 transition-colors flex items-center gap-1.5"
-                                    >
-                                        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                        {copied ? 'Copied' : 'Copy Code'}
-                                    </button>
-                                </div>
-                                <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 h-[250px] overflow-y-auto font-mono text-xs text-brand-emerald-400/80 leading-relaxed custom-scrollbar">
-                                    <pre className="whitespace-pre-wrap">{optimizedResult.latex}</pre>
-                                </div>
-                                <p className="text-[10px] text-slate-500 italic text-center">
-                                    Pro Tip: Paste this code into Overleaf for a pixel-perfect tech resume.
-                                </p>
-                            </div>
+                        <div>
+                            <h4 className="text-white font-bold">Optimization Success!</h4>
+                            <p className="text-slate-400 text-xs font-medium">LaTeX code copied to clipboard & PDF ready.</p>
                         </div>
+                        <button onClick={() => setShowSuccessToast(false)} className="ml-4 text-slate-500 hover:text-white transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             )}
+
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Job Discovery</h1>
